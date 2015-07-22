@@ -1,0 +1,20 @@
+///brief functional description
+
+INPUTS: vehicle binary images, configuration workspace
+
+Each iteration does the following:
+
+1.  Reads image, scales to binary (if necessary) 
+2.	Cuts image to vehicle dimensions and in half by height
+3.  Filters out bottom vehicle contour
+4.  Analyse contour (in learning phase outputs detected parameters in file)
+5.  Performs detection algorithms
+6.  Writes analysis results
+
+CONFIGURATION OPTIONS:
+ - Input Directory
+ - Filter Type
+ - Detection Params
+ - Detection Algorithm
+ - Output Configuration
+
