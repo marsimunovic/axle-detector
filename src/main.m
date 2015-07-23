@@ -8,6 +8,7 @@ clear all
 clc
 #Load packages
 pkg load image
+pkg load signal
 
 
 #INPUT ARGUMENTS
