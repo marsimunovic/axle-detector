@@ -33,6 +33,7 @@ for img_ind = 1 : sz(1)
 	# crop unnecessary parts
 	Xcrop = cropImage(Xbin);
 	# filter bottom contour
+	bottom_edge = detect_edge(Xcrop);
 	break;
 	# analys bottom contour
 

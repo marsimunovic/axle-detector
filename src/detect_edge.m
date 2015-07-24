@@ -1,4 +1,4 @@
-function [ bottom_edge ] = detec_edge( input_image )
+function [ bottom_edge ] = detect_edge( input_image )
 %DETEC_EDGE detects lower boundary of the vehicle
 %   
 % input_image - matrix represantation of an image
