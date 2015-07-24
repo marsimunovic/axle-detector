@@ -30,12 +30,12 @@ for n=1:width
     end
 end
 
-figure
-plot(bottom_edge)
-hold on
-plot(bottom_edge_filt, 'r')
+#figure
+#plot(bottom_edge)
+#hold on
+#plot(bottom_edge_filt, 'r')
 
-
+bottom_edge = bottom_edge_filt;
 
 
 end

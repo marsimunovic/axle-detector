@@ -29,9 +29,9 @@ start = int32(height/2)+1;
 im_half = im_edge(start:end, :);
 filled_h = image_fill(im_half);
 filled = image_fill(filled_h);
-figure
-subplot(3,1,1), imshow(LQ(start:end, :))
-subplot(3,1,2), imshow(im_half)
-subplot(3,1,3), imshow(imsharpen(filled_h))
+#figure
+#subplot(3,1,1), imshow(LQ(start:end, :))
+#subplot(3,1,2), imshow(im_half)
+#subplot(3,1,3), imshow(imsharpen(filled_h))
 
 end
