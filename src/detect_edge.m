@@ -8,9 +8,10 @@ function [ bottom_edge ] = detect_edge( input_image )
 norm_image = input_image;
 bottom_edge = zeros(1, width);
 bottom_edge_filt = zeros(1, width);
+
 for n=1:width
     updated = 0;
-    for m=height:-1:1
+    for m=height:-1:4
         if(norm_image(m, n) == 0)
             if(updated == 0)
                 bottom_edge(1,n) = height - m;
