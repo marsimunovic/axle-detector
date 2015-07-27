@@ -1,0 +1,4 @@
+1.throw out straight line pixels (e.g if 3 in the same row
+next to each other leave only 2)
+2. if there are long straight lines in lower row it PROBABLY
+means that vehicle was moving to slow
