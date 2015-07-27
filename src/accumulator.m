@@ -1,7 +1,8 @@
-[height, width] = size(Xcrop);
+function [acc_image] = accumulator(input_image, radii)
+[height, width] = size(input_image);
 Xsingle = zeros(height, width);
-Xsingle(Xcrop > 0) = 153;
-
+Xsingle(input_image > 0) = 153;
+acc_image = Xsingle;
 imgf = single(Xsingle);
 
 % Compute the gradient and the magnitude of gradient
@@ -10,7 +11,7 @@ grdmag = sqrt(grdx.^2 + grdy.^2);
 
 %Get the linear indices, as well as the subscripts, of the pixels
 % whose gradient magnitudes are larger than the given threshold
-unique(grdmag)
+#unique(grdmag)
 grdmasklin = find(grdmag > 100);
 [grdmask_IdxI, grdmask_IdxJ] = ind2sub(size(grdmag), grdmasklin);
 
@@ -22,7 +23,7 @@ grdmasklin = find(grdmag > 100);
 % accumulation array) of all the votings that are introduced by a
 % same pixel in the image. Similarly with matrix 'lin2accum_aI'.
 
-prm_r_range = [30 70];
+prm_r_range = radii;
 rr_4linaccum = double( prm_r_range );
 linaccum_dr = [ (-rr_4linaccum(2) + 0.5) : -rr_4linaccum(1) , ...
     (rr_4linaccum(1) + 0.5) : rr_4linaccum(2) ];
@@ -64,3 +65,12 @@ clear mask_valid_aJaI;
 accum = accumarray( lin2accum , weight4accum );
 accum = [ accum ; zeros( numel(grdmag) - numel(accum) , 1 ) ];
 accum = reshape( accum, size(grdmag) );
+acc_image = accum;
+maxima = max(unique(accum));
+scaled = acc_image./maxima*254;
+
+#M = median(unique(acc_image));
+M = 2;
+acc_image(accum < M) = 1;
+acc_image(accum >=M) = 0;
+end
