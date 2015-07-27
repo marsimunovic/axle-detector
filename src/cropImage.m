@@ -2,9 +2,9 @@ function [Xcrop] = cropImage(image_matrix_binary)
 # crops image in following way:
 # first column with black pixel becomes first column of an image
 # last column with black pixel becomes last column of an image
-# only 70 lower pixel rows of an image are preserved
+# only LOWER_PART (global variable) lower pixel rows of an image are preserved
 
-LOWER_PART = 70;
+global LOWER_PART;
 MIN_PIX_REPETITION = 30; 
 
 #first split image in half

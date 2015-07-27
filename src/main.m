@@ -6,6 +6,9 @@
 close all
 clear all
 clc
+#enable instant printing
+more off
+
 #Load packages
 pkg load image
 pkg load signal
@@ -13,7 +16,10 @@ pkg load signal
 
 #INPUT ARGUMENTS
 image_dir = '../axle_images/';
-
+output_dir = '../processed/';
+global LOWER_PART = 100;
+BLUR_LEVEL = 3; # 0 - no blur, 1 - blur up, 2 - blur up and left, 3 - blur up, left and right
+RADII = [40 80];
 
 # load configuration environment
 
@@ -35,21 +41,20 @@ for img_ind = 1 : sz(1)
 	[Xorig, Xbin] = getImageMatrix(image_list{img_ind});
 	# crop unnecessary parts
 	Xcrop = cropImage(Xbin);
-	# filter bottom contour
+	# detect bottom contour
 	bottom_edge = detect_edge(Xcrop);
-	N = 20;
-	n = 0:N-1;
-	b = 0.5*(1 - cos(2*pi*n/(N-1)));
-	a = sum(b);
-	b = b/a;
-	a = 1;
-	y = filter(b,a, bottom_edge);
-	#figure
-	#plot(y)
+	
+	#convert 1D bottom contour to image
+	#bottom_edge = han_filter(bottom_edge);
+	image_matrix = signal2image(bottom_edge, BLUR_LEVEL);
+	# analys bottom contour
+	accumul = accumulator(image_matrix, RADII);
+	overlap = accumul & image_matrix;
 	#print -dgif image_list{img_ind}
-	image_matrix = signal2image(bottom_edge);
-	imwrite(image_matrix, fname{end});
-    pause(1)
+
+	dest = strcat(output_dir, fname{end});
+	imwrite(overlap, dest);
+    #pause(1)
 	continue;
 
 	f = figure;
@@ -58,7 +63,7 @@ for img_ind = 1 : sz(1)
 	print("MyPNG.png", "-dpng")
 
     break;
-	# analys bottom contour
+	
 
 	# perform detection
 
