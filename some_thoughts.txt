@@ -2,3 +2,4 @@
 next to each other leave only 2)
 2. if there are long straight lines in lower row it PROBABLY
 means that vehicle was moving to slow
+3. add max height criteria for axle candidates
