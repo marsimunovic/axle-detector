@@ -4,7 +4,9 @@ function [output] = han_filter(input, window_len = 40, to_file = 'MySavedPlot')
 #disp('han_filter')
 
 
-window_len = numel(input)/25;
+if (numel(input) < 500)
+	window_len = numel(input)/25;
+end
 N = window_len;
 n = 0:N-1;
 b = 0.5*(1 - cos(2*pi*n/(N-1)));
@@ -17,7 +19,6 @@ output = filter(b,a, input);
 [pks, locs] = findpeaks(output);
 [locsSortex, SortedIndex] = sort(locs);
 pksSorted = pks(SortedIndex);
-dist = diff(locsSortex);
 reverse = (max(output(:)) + 1) - output;
 [pksr, locsr] = findpeaks(reverse);
 locsrSorted = sort(locsr);
@@ -54,10 +55,12 @@ for n = 2:length(locsSortex)
 	indr = locsSortex(n);
 	distx = indr - indl; # distance in pixels between two maxima
 	if distx < 15
+		#disp('to narrow')
 		continue;
 	end
 	min_loc = locsrSorted(find((locsrSorted > indl) & (locsrSorted < indr)));
 	if(numel(min_loc) < 1)
+		#disp('no minima')
 		continue
 	end
 	ind_min = min_loc(1);
@@ -67,10 +70,12 @@ for n = 2:length(locsSortex)
 
 
 	if (distyl < 4) || (distyr < 4)
+		#disp('to short')
 		continue
 	end
 	ratioo = max([distyr distyl])/min([distyl distyr]);
 	if (ratioo > 5)
+		#disp('to different')
 		continue
 	end
 	
@@ -89,17 +94,17 @@ end
 fig = figure;
 set(fig, "visible", "off")
 
-#plot(output)
-#hold on
-#plot(minima_locations, output(minima_locations), 'ro');
+plot(output)
+hold on
+plot(minima_locations, output(minima_locations), 'ro');
 
 offset = int16(floor(window_len/2));
 for n = 1 : numel(minima_locations)
 	minima_locations(n) = minima_locations(n) - offset;
 end
-plot(input)
-hold on
-plot(minima_locations, input(minima_locations), 'ro');
+#plot(input)
+#hold on
+#plot(minima_locations, input(minima_locations), 'ro');
 print(fig, to_file,'-dgif')
 
 output = int8(output);

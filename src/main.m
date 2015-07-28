@@ -38,6 +38,9 @@ printf("Loaded %d images\n", sz(1));
 
 for img_ind = 1 : sz(1)
 	# open image
+	#if img_ind > 2
+	#	break
+	#end
 	printf("Image %s\n", image_list{img_ind});
 	fname = strsplit(image_list{img_ind}, '/');
 	
@@ -67,6 +70,7 @@ for img_ind = 1 : sz(1)
 	dest = strcat(output_dir, fname{end});
 	imwrite(overlap, dest);
     #pause(1)
+    
 	continue;
 
 	#f = figure;
