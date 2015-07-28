@@ -1,8 +1,7 @@
-function [acc_image] = accumulator(input_image, radii)
+function [accum, acc_image_bin] = accumulator(input_image, radii)
 [height, width] = size(input_image);
 Xsingle = zeros(height, width);
 Xsingle(input_image > 0) = 153;
-acc_image = Xsingle;
 imgf = single(Xsingle);
 
 % Compute the gradient and the magnitude of gradient
@@ -27,11 +26,21 @@ prm_r_range = radii;
 rr_4linaccum = double( prm_r_range );
 linaccum_dr = [ (-rr_4linaccum(2) + 0.5) : -rr_4linaccum(1) , ...
     (rr_4linaccum(1) + 0.5) : rr_4linaccum(2) ];
+#disp('Size of linaccum_dr and grdmasklin')
+#size(linaccum_dr)
+#size(grdmag)
+#size(grdmask_IdxJ)
+#size(grdmask_IdxI)
+#size(repmat( double(grdmask_IdxJ)+0.5 , [1,length(linaccum_dr)]))
+
 
 lin2accum_aJ = floor( ...
 	double(grdx(grdmasklin)./grdmag(grdmasklin)) * linaccum_dr + ...
 	repmat( double(grdmask_IdxJ)+0.5 , [1,length(linaccum_dr)] ) ...
 );
+
+
+
 lin2accum_aI = floor( ...
 	double(grdy(grdmasklin)./grdmag(grdmasklin)) * linaccum_dr + ...
 	repmat( double(grdmask_IdxI)+0.5 , [1,length(linaccum_dr)] ) ...
@@ -41,14 +50,21 @@ lin2accum_aI = floor( ...
 mask_valid_aJaI = ...
     lin2accum_aJ > 0 & lin2accum_aJ < (size(grdmag,2) + 1) & ...
     lin2accum_aI > 0 & lin2accum_aI < (size(grdmag,1) + 1);
+#disp('Size of mask')
+#size(mask_valid_aJaI)#
 
 mask_valid_aJaI_reverse = ~ mask_valid_aJaI;
 lin2accum_aJ = lin2accum_aJ .* mask_valid_aJaI + mask_valid_aJaI_reverse;
 lin2accum_aI = lin2accum_aI .* mask_valid_aJaI + mask_valid_aJaI_reverse;
 clear mask_valid_aJaI_reverse;
 
+#disp('Size of lin2accum_a_')
+#size(lin2accum_aI)
+#size(lin2accum_aJ)
+
 % Linear indices (of the votings) into the accumulation array
 lin2accum = sub2ind( size(grdmag), lin2accum_aI, lin2accum_aJ );
+#size(lin2accum)
 
 lin2accum_size = size( lin2accum );
 lin2accum = reshape( lin2accum, [numel(lin2accum),1] );
@@ -65,12 +81,11 @@ clear mask_valid_aJaI;
 accum = accumarray( lin2accum , weight4accum );
 accum = [ accum ; zeros( numel(grdmag) - numel(accum) , 1 ) ];
 accum = reshape( accum, size(grdmag) );
-acc_image = accum;
-maxima = max(unique(accum));
-scaled = acc_image./maxima*254;
+acc_image_bin = accum;
 
-#M = median(unique(acc_image));
+
+#M = median(unique(acc_image_bin));
 M = 2;
-acc_image(accum < M) = 1;
-acc_image(accum >=M) = 0;
+acc_image_bin(acc_image_bin < M) = 1;
+acc_image_bin(acc_image_bin >=M) = 0;
 end

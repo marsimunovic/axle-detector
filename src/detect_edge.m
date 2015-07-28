@@ -25,12 +25,14 @@ for n=1:width
     end
 end
 
+
 for n=1:width
     if(bottom_edge(n) + 5 <= bottom_edge_filt(n))
         bottom_edge_filt(n) = bottom_edge(n);
     end
 end
 
+#plot(bottom_edge_filt)
 #figure
 #plot(bottom_edge)
 #hold on
@@ -38,5 +40,26 @@ end
 
 bottom_edge = bottom_edge_filt;
 
+#shrinked_edge = bottom_edge;
+#m = 2;
+#count = 0;
+#for n = 2 : width
+#    if bottom_edge(n - 1) == bottom_edge(n)
+#        count = count + 1;
+#        if(count == 3)
+#            count = 0;
+#            continue # skip assignment
+#        end
+#    else
+#        count = 0;
+#    end
+#    m = m + 1;
+#    shrinked_edge(m) = bottom_edge(n);
+#end
+##disp('shrinking signal from')
+##width
+##disp('to')
+##m
+#bottom_edge = shrinked_edge;
 
 end

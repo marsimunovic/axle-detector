@@ -7,7 +7,6 @@ global LOWER_PART;
 
 IMAGE_HEIGHT = LOWER_PART;
 
-
 height = max(signal(:));
 if  height < IMAGE_HEIGHT
 	height = IMAGE_HEIGHT;
