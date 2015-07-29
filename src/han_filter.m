@@ -5,7 +5,7 @@ function [output] = han_filter(input, window_len = 40, to_file = 'MySavedPlot')
 
 
 if (numel(input) < 500)
-	window_len = numel(input)/25;
+	window_len = numel(input)/40;
 end
 N = window_len;
 n = 0:N-1;
@@ -38,7 +38,7 @@ amp_min = output(last_min);
 last_max = last_min;
 if (last_min > locsSortex(end))
 	#minima is last, find maxima
-	disp('adding minima')
+	#disp('adding minima')
 	for n = last_min + 1: numel(input)
 		if output(n) >=	amp_min
 			amp_min = output(n);
@@ -47,7 +47,7 @@ if (last_min > locsSortex(end))
 	end
 	locsSortex = [locsSortex last_max];
 	pks = [pks output(last_max)];
-	disp('minima added')
+	#disp('minima added')
 end
 
 
@@ -132,7 +132,7 @@ end
 new_maxima_locations = [];
 fig = figure;
 set(fig, "visible", "off")
-disp('Plotting section')
+#disp('Plotting section')
 plot(input)
 
 for n = 1 : numel(minima_locations)
@@ -165,8 +165,21 @@ for n = 1 : numel(minima_locations)
 	ra = min([(new_maxima_locations(end) - centerx) (centerx - new_maxima_locations(end-1))]);
 	S = 'g';
 	if (input(centerx) > 0)
-		hold on
-		drawEllipse(centerx, centery, ra, rb, S)
+		#printf("Input %d\n", centerx);
+		ellipse_area = ra*rb*pi/2;
+		start = centerx - ra;
+		stop = centerx + ra;
+		area_under = sum(input(start:stop));
+		
+		area_over = 2*ra*centery - area_under;
+		#double([ellipse_area area_over (ellipse_area./area_over)])
+		ratioo = double(double(ellipse_area)/double(area_over))
+		if (area_over > 0) && (ellipse_area > 200) && (ratioo <= 1.5) && (ration >= 0.6)
+			#disp('Drawing elipse')
+			hold on
+			drawEllipse(centerx, centery, ra, rb, S)
+		end
+
 	end
 
 	#DrawCircle(centerx, centery, r, int16(r)*4, S);
@@ -181,7 +194,7 @@ hold on
 plot(new_maxima_locations, input(new_maxima_locations), 'go');
 printf("Saving %s\n", to_file );
 hold on
-
+print -depsc test.eps
 print(fig, to_file,'-dgif')
 
 output = int8(output);
