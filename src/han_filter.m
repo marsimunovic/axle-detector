@@ -114,8 +114,6 @@ end
 
 
 
-fig = figure;
-set(fig, "visible", "off")
 
 #plot(output)
 #hold on
@@ -132,6 +130,11 @@ for n = 1 : numel(maxima_locations)
 end
 
 new_maxima_locations = [];
+fig = figure;
+set(fig, "visible", "off")
+disp('Plotting section')
+plot(input)
+
 for n = 1 : numel(minima_locations)
 	indx = find(maxima_locations < minima_locations(n));
 	last_smaller = indx(end);
@@ -155,14 +158,30 @@ for n = 1 : numel(minima_locations)
 	else
 		new_maxima_locations = [new_maxima_locations maxima_locations(last_smaller) maxima_locations(last_smaller+1)];
 	end
+	centery = min([input(new_maxima_locations(end)) input(new_maxima_locations(end-1))]);
+	centerx = minima_locations(n);
+	r = centery - input(centerx);
+	rb = r;
+	ra = min([(new_maxima_locations(end) - centerx) (centerx - new_maxima_locations(end-1))]);
+	S = 'g';
+	if (input(centerx) > 0)
+		hold on
+		drawEllipse(centerx, centery, ra, rb, S)
+	end
+
+	#DrawCircle(centerx, centery, r, int16(r)*4, S);
+
 end
-disp('Plotting section')
-plot(input)
+
+
+
 hold on
 plot(minima_locations, input(minima_locations), 'ro');
 hold on
 plot(new_maxima_locations, input(new_maxima_locations), 'go');
 printf("Saving %s\n", to_file );
+hold on
+
 print(fig, to_file,'-dgif')
 
 output = int8(output);
