@@ -5,7 +5,7 @@ function [output] = han_filter(input, window_len = 40, to_file = 'MySavedPlot')
 
 
 if (numel(input) < 500)
-	window_len = numel(input)/40;
+	window_len = numel(input)*0.15;
 end
 N = window_len;
 n = 0:N-1;
@@ -15,7 +15,10 @@ b = b/a;
 a = 1;
 output = filter(b,a, input);
 #output = int8(output);
-#plot(y)
+#output
+#figure
+#plot(output)
+#pause(3)
 [pks, locs] = findpeaks(output);
 [locsSortex, SortedIndex] = sort(locs);
 pksSorted = pks(SortedIndex);

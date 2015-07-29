@@ -18,7 +18,8 @@ pkg load geometry
 
 
 #INPUT ARGUMENTS
-image_dir = '../axle_images/';
+#image_dir = '../axle_images/';
+image_dir = '../i250_images/';
 output_dir = '../processed_images/';
 output_dir2 = '../filtered_images/';
 global LOWER_PART = 100;
