@@ -14,6 +14,7 @@ graphics_toolkit("gnuplot")
 #Load packages
 pkg load image
 pkg load signal
+pkg load geometry
 
 
 #INPUT ARGUMENTS
@@ -38,7 +39,7 @@ printf("Loaded %d images\n", sz(1));
 
 for img_ind = 1 : sz(1)
 	# open image
-	#if img_ind > 2
+	#if img_ind > 1
 	#	break
 	#end
 	printf("Image %s\n", image_list{img_ind});
