@@ -31,6 +31,7 @@ pksr = output(locsrSorted);
 #plot(locsrSorted, pksr, 'rx')
 
 minima_locations = int16([]);
+maxima_locations = int16([]);
 
 last_min = locsrSorted(end);
 amp_min = output(last_min);
@@ -54,22 +55,42 @@ for n = 2:length(locsSortex)
 	indl = locsSortex(n-1);
 	indr = locsSortex(n);
 	distx = indr - indl; # distance in pixels between two maxima
-	if distx < 15
+	if distx < 60
+		#[distx, indl, indr]
 		#disp('to narrow')
 		continue;
 	end
 	min_loc = locsrSorted(find((locsrSorted > indl) & (locsrSorted < indr)));
 	if(numel(min_loc) < 1)
+		#[indl, indr]
 		#disp('no minima')
+		#locsrSorted
 		continue
 	end
 	ind_min = min_loc(1);
+	if(numel(min_loc) > 1)
+		#disp('recalculating min')
+		start = min_loc(1);
+		stop = min_loc(end);
+		if(abs(output(start) - output(stop)) < 3)
+			avg = int16(sum(output(start:stop)) / (stop + 1 - start));
+			if (abs(avg - output(start) < 3 && abs(avg - output(stop) < 3)))
+				ind_min = int16((start+stop)/2);
+			end
+		end
+	end
+	
+	if(output(ind_min) > 15)
+		#disp('to high')
+		continue
+	end
+
 	distyl = output(indl) - output(ind_min);
 	distyr = output(indr) - output(ind_min);
 
 
 
-	if (distyl < 4) || (distyr < 4)
+	if (distyl < 5) || (distyr < 5)
 		#disp('to short')
 		continue
 	end
@@ -78,10 +99,12 @@ for n = 2:length(locsSortex)
 		#disp('to different')
 		continue
 	end
+
+
 	
 
 	minima_locations = [minima_locations int16(ind_min)];
-	
+	maxima_locations = [maxima_locations int16(indl) int16(indr)];
 
 	#ratioo
 	#distx
@@ -94,17 +117,52 @@ end
 fig = figure;
 set(fig, "visible", "off")
 
-plot(output)
-hold on
-plot(minima_locations, output(minima_locations), 'ro');
+#plot(output)
+#hold on
+#plot(minima_locations, output(minima_locations), 'ro');
+#hold on
+#plot(maxima_locations, output(maxima_locations), 'go');
 
 offset = int16(floor(window_len/2));
 for n = 1 : numel(minima_locations)
 	minima_locations(n) = minima_locations(n) - offset;
 end
-#plot(input)
-#hold on
-#plot(minima_locations, input(minima_locations), 'ro');
+for n = 1 : numel(maxima_locations)
+	maxima_locations(n) = maxima_locations(n) - offset;
+end
+
+new_maxima_locations = [];
+for n = 1 : numel(minima_locations)
+	indx = find(maxima_locations < minima_locations(n));
+	last_smaller = indx(end);
+	#[maxima_locations(last_smaller) minima_locations(n) maxima_locations(last_smaller + 1)]
+	peakl = input(maxima_locations(last_smaller));
+	peakr = input(maxima_locations(last_smaller + 1));
+	if peakl < peakr
+	#search right
+		pos = minima_locations(n);
+		while input(pos) < peakl
+			pos = pos + 1;
+		end
+		new_maxima_locations = [new_maxima_locations maxima_locations(last_smaller) pos];
+	elseif peakr < peakl
+	#search left
+		pos = minima_locations(n);
+		while input(pos) < peakr
+			pos = pos - 1;
+		end
+		new_maxima_locations = [new_maxima_locations pos maxima_locations(last_smaller+1)];
+	else
+		new_maxima_locations = [new_maxima_locations maxima_locations(last_smaller) maxima_locations(last_smaller+1)];
+	end
+end
+disp('Plotting section')
+plot(input)
+hold on
+plot(minima_locations, input(minima_locations), 'ro');
+hold on
+plot(new_maxima_locations, input(new_maxima_locations), 'go');
+printf("Saving %s\n", to_file );
 print(fig, to_file,'-dgif')
 
 output = int8(output);
