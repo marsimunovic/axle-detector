@@ -174,7 +174,7 @@ for n = 1 : numel(minima_locations)
 		area_over = 2*ra*centery - area_under;
 		#double([ellipse_area area_over (ellipse_area./area_over)])
 		ratioo = double(double(ellipse_area)/double(area_over))
-		if (area_over > 0) && (ellipse_area > 200) && (ratioo <= 1.5) && (ration >= 0.6)
+		if (area_over > 0) && (ellipse_area > 200) && (ratioo <= 1.5) && (ratioo >= 0.6)
 			#disp('Drawing elipse')
 			hold on
 			drawEllipse(centerx, centery, ra, rb, S)
