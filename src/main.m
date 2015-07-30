@@ -1,25 +1,25 @@
-# this is main file of axle-detection project
-# it loads configuration environment
-# and calls appropriate functions accordingly
+% This is main file of axle-detection project
+% it loads configuration environment
+% and calls appropriate functions accordingly
 
-#Remove zombie items
+%Remove zombie items
 close all
 clear all
 clc
-#enable instant printing
+%enable instant printing
 more off
-#enable printing to file support
+%enable printing to file support
 graphics_toolkit("gnuplot")
 
-#Load packages
-pkg load io 		#enables writing statistics files (.xls)
-pkg load image  	#enable operation on image files
-pkg load signal 	#signal processing functionality
-pkg load geometry	#enables plotting geometrical shapes (e.g. ellipse)
+%Load package prerequisites
+pkg load io 		%enables writing statistics files (.xls)
+pkg load image  	%enable operation on image files
+pkg load signal 	%signal processing functionality
+pkg load geometry	%enables plotting geometrical shapes (e.g. ellipse)
 
 
-#INPUT ARGUMENTS
-#image_dir = '../axle_images/';
+%INPUT ARGUMENTS
+%image_dir = '../axle_images/';
 image_dir = '../i250_images/';
 output_dir = '../processed_images/';
 output_dir2 = '../filtered_images/';
@@ -40,7 +40,7 @@ sz = size(image_list);
 printf("Loaded %d images\n", sz(1));
 
 for img_ind = 1 : sz(1)
-	# open image
+	#open image
 	#if img_ind > 1
 	#	break
 	#end
@@ -57,10 +57,9 @@ for img_ind = 1 : sz(1)
 	bottom_edge = detect_edge(Xcrop);
 	#detect_axles(bottom_edge);
 	dest = strcat(output_dir2, fname{end});
-	han_filter(bottom_edge, 40, dest);
+	han_filter(bottom_edge, dest);
 	
-	#convert 1D bottom contour to image
-	#bottom_edge = han_filter(bottom_edge);
+
 	image_matrix = signal2image(bottom_edge, BLUR_LEVEL);
 	# analys bottom contour
 	[accumul, accumul_bin] = accumulator(image_matrix, RADII);
@@ -74,19 +73,6 @@ for img_ind = 1 : sz(1)
 	imwrite(overlap, dest);
     #pause(1)
     
-	continue;
-
-	#f = figure;
-	#set(f, "visible", "off")
-	#plot(y)
-	#print("MyPNG.png", "-dpng")
-
-    break;
-	
-
-	# perform detection
-
-	# write results to file
 
 end
 

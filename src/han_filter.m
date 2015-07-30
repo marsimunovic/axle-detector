@@ -1,9 +1,9 @@
-function [output] = han_filter(input, window_len = 40, to_file = 'MySavedPlot') 
+function [output] = han_filter(input, to_file = 'MySavedPlot') 
 #performs low pass filtering in time domain with
 #Han window of length window_len
 #disp('han_filter')
 
-
+window_len = 40;
 if (numel(input) < 500)
 	window_len = numel(input)*0.15;
 end
@@ -198,7 +198,6 @@ hold on
 plot(new_maxima_locations, input(new_maxima_locations), 'go');
 printf("Saving %s\n", to_file );
 hold on
-print -depsc test.eps
 print(fig, to_file,'-dgif')
 
 output = int8(output);
