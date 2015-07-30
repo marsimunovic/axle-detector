@@ -24,7 +24,7 @@ function [success] = write_vehicle_metadata(img_name, axle_data)
   if exist('../reports', 'dir') ~= 7
     mkdir('../reports');
   end
-	row = 2;
+	row = 3;
   
   num_axles = size(axle_data, 1);
   data_size = size(axle_data, 2);
@@ -36,7 +36,7 @@ function [success] = write_vehicle_metadata(img_name, axle_data)
   xls = xlsopen(output_file, 1); %open with RW access
 	sheet = 'Sheet1';
 	offset = 64; %ascii value before first column
-  if row == 2
+  if row == 3
     %%new file
     col_names = {'Name', 'AxlCnt', 'CX', 'CY', 'RA', 'RB', ...
                 'MinPoint', 'Left', 'Right', 'Area', 'Ratio', 'RelPos'};

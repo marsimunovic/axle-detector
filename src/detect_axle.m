@@ -18,7 +18,7 @@ function [axle_data] = detect_axle(input_data, minima_locations, maxima_location
 			while input_data(pos) < peakl
 				pos = pos + 1;
 			end
-			new_maxima_locations = [new_maxima_locations maxima_locations(last_smaller) pos];
+			new_maxima_locationsnew_maxima_locations = [new_maxima_locations maxima_locations(last_smaller) pos];
 		elseif peakr < peakl
 		#search left
 			pos = minima_locations(n);
@@ -29,9 +29,12 @@ function [axle_data] = detect_axle(input_data, minima_locations, maxima_location
 		else
 			new_maxima_locations = [new_maxima_locations maxima_locations(last_smaller) maxima_locations(last_smaller+1)];
 		end
-		centery = min([input_data(new_maxima_locations(end)) input_data(new_maxima_locations(end-1))]);
+    leftH = input_data(new_maxima_locations(end));
+    rightH = input_data(new_maxima_locations(end-1));
+    min_low = input_data(centerx);
+		centery = min([leftH rightH]);
 		centerx = minima_locations(n);
-		r = centery - input_data(centerx);
+		r = centery - min_low;
 		rb = r;
 		ra = min([(new_maxima_locations(end) - centerx) (centerx - new_maxima_locations(end-1))]);
 		S = 'g';
@@ -45,11 +48,14 @@ function [axle_data] = detect_axle(input_data, minima_locations, maxima_location
 			area_over = 2*ra*centery - area_under;
 			#double([ellipse_area area_over (ellipse_area./area_over)])
 			ratioo = double(double(ellipse_area)/double(area_over));
-
+      rel_pos = centerx*100/numel(input_data);
 			%% do this only for confirmed lifted axles
 			if (area_over > 0) && (ellipse_area > 200) && (ratioo <= 1.5) && (ratioo >= 0.6)
 				#disp('Drawing elipse')
-				axle_data = [axle_data; [centerx, centery, ra, rb, area_over, ratioo]];
+				axle_data = [axle_data; [centerx, centery, ra, rb, min_low, leftH, ...
+                     rightH, area_over, rel_pos, ratio]];
+                    
+        area_over, ratioo]];
 				hold on
 				drawEllipse(centerx, centery, ra, rb, S);
 			end
