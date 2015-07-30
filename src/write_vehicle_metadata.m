@@ -24,20 +24,27 @@ function [success] = write_vehicle_metadata(img_name, axle_data)
   if exist('../reports', 'dir') ~= 7
     mkdir('../reports');
   end
-	persistent row = 2;
+	row = 2;
   
-  if(size(axle_data, 1) == 0)
+  num_axles = size(axle_data, 1);
+  data_size = size(axle_data, 2);
+  if num_axles == 0
     return;
   end
      
-	if row == 2
-		%%new file
-    
-	end
+
   xls = xlsopen(output_file, 1); %open with RW access
 	sheet = 'Sheet1';
-	num_axles = size(axle_data, 1);
-  offset = 64; %ascii value before first column
+	offset = 64; %ascii value before first column
+  if row == 2
+    %%new file
+    col_names = {'Name', 'AxlCnt', 'CX', 'CY', 'RA', 'RB', ...
+                'MinPoint', 'Left', 'Right', 'Area', 'Ratio', 'RelPos'};
+    assert((numel(col_names) == (data_size + 2))); %if something is wrong
+    xlRange = strcat(char(offset+1),'1',':',char(offset+numel(col_names)),'1');
+    xls = oct2xls(cellstr(col_names), xls, sheet,  xlRange);            
+	end
+ 
   
 
   rowStr = num2str(row);
@@ -45,17 +52,17 @@ function [success] = write_vehicle_metadata(img_name, axle_data)
   firstCell  = strcat(char(offset+1), rowStr);
 	secondCell = strcat(char(offset+2), rowStr);
   startCell  = strcat(char(offset+3), rowStr);
-  endCell    = strcat(char(offset+3+size(axle_data,2)-1), rowStrEnd);
+  endCell    = strcat(char(offset+3+data_size-1), rowStrEnd);
   xlRange    = strcat(startCell, ':', endCell);
   
-  xls = oct2xls(cellstr(img_name), xls, 'Sheet1', firstCell);
-  xls = oct2xls(num_axles, xls,'Sheet1', secondCell);
-  xls = oct2xls(axle_data, xls, 'Sheet1', xlRange);
+  xls = oct2xls(cellstr(img_name), xls, sheet, firstCell);
+  xls = oct2xls(num_axles, xls, sheet, secondCell);
+  xls = oct2xls(axle_data, xls, sheet, xlRange);
   
   %xlswrite(output_file, cellstr(img_name), 'Sheet1', firstCell);
   %xlswrite(output_file, num_axles, 'Sheet1', secondCell);
   %xlswrite(output_file, axle_data, 'Sheet1', xlRange);
         
   row = row + num_axles;
-  xlsclose(xls)
+  xlsclose(xls);
 end
