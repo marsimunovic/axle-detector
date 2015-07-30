@@ -6,6 +6,7 @@ function [Xorig, Xbin] = getImageMatrix(image_path)
 %% Xbin - binary image (0 - black, 1 - white)
 
 	Xorig = imread(image_path);
+	%%[text, id] = lastwarn();
 	Xbin = Xorig;
 	Xbin(Xbin>0) = 1;
 

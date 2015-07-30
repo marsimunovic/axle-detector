@@ -17,12 +17,12 @@ pkg load signal 	%signal processing functionality
 pkg load geometry	%enables plotting geometrical shapes (e.g. ellipse)
 
 % setup environment %
-warning("off", "your version of GraphicsMagick limits images to 8 bits per pixel");
+warning("off", "Octave:GraphicsMagic-Quantum-Depth");
 
 % INPUT ARGUMENTS
 % image_dir - top directory with vehicle profile images
 % output_dir - top directory for output files (reports, images, etc.)
-% output_subdir1 - directory for plots with detected axles
+% output_subdir1 - directory for plots withcd  detected axles
 
 
 image_dir = strcat('..', filesep(), 'axle_images');
@@ -47,13 +47,13 @@ global LOWER_PART = 80; %determines how many lower pixels of vehicle image will 
  
 
 %get image list
-disp("Loading files. This might take a while...\n");
+disp("Loading files. This might take a while...");
 pause(1);
 
 image_list = getAllFiles(image_dir);
 image_count = size(image_list, 1);
 
-printf("Loaded %d images\n", image_count);
+printf("Loaded %d images\n\n", image_count);
 
 %% for each image in list perform workflow
 

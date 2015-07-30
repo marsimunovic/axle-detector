@@ -1,4 +1,4 @@
-function [output, offset] = han_filter1(input_data) 
+function [output, offset] = han_filter(input_data) 
 %%  performs low pass filtering in time domain with
 %%  Han window of length window_len
 %%	input_data - bottom vehicle contour
