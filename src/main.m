@@ -12,9 +12,10 @@ more off
 graphics_toolkit("gnuplot")
 
 #Load packages
-pkg load image
-pkg load signal
-pkg load geometry
+pkg load io 		#enables writing statistics files (.xls)
+pkg load image  	#enable operation on image files
+pkg load signal 	#signal processing functionality
+pkg load geometry	#enables plotting geometrical shapes (e.g. ellipse)
 
 
 #INPUT ARGUMENTS

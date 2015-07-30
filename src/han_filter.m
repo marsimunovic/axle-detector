@@ -83,7 +83,7 @@ for n = 2:length(locsSortex)
 		end
 	end
 	
-	if(output(ind_min) > 15)
+	if(output(ind_min) > 12)
 		#disp('to high')
 		continue
 	end
@@ -179,6 +179,7 @@ for n = 1 : numel(minima_locations)
 		ratioo = double(double(ellipse_area)/double(area_over))
 		if (area_over > 0) && (ellipse_area > 200) && (ratioo <= 1.5) && (ratioo >= 0.6)
 			#disp('Drawing elipse')
+			#[ra, rb, centerx, centery]
 			hold on
 			drawEllipse(centerx, centery, ra, rb, S)
 		end
