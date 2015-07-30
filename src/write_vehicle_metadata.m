@@ -13,29 +13,49 @@ function [success] = write_vehicle_metadata(img_name, axle_data)
 %%  min_point - distance from bottom to tyre
 %%  left_edge - detected left edge height
 %%  right_edge - detected right edge height
-%%  
+%%  tyre_area - area of detected tyre (only lower half)
+%%  ratio - ratio of tyre_area and ellipse area where
+%%  ra and rb are semi-major and semi-minor axes
+%%  rel_pos - position of axle in relation to vehicle
+%%  lenght given in percentage units
 
 	global OUTPUT_FILE_PATH;
-	persistent output_file = 'axle_data.xlsx';
+	persistent output_file = '../reports/report.xlsx';
+  if exist('../reports', 'dir') ~= 7
+    mkdir('../reports');
+  end
 	persistent row = 2;
+  
+  if(size(axle_data, 1) == 0)
+    return;
+  end
+     
 	if row == 2
 		%%new file
-
+    
 	end
+  xls = xlsopen(output_file, 1); %open with RW access
+	sheet = 'Sheet1';
+	num_axles = size(axle_data, 1);
+  offset = 64; %ascii value before first column
+  
 
-	sheet = 1;
-	entry = [num_axles axle_data position];
-	N = numel(entry);
-	rowStr = num2str(row);
-	firstCell = strcat('A', rowStr);
-	secondCell = 
-	startCell = strcat('C', rowStr, ':');
-	cell_pos = 66 + N;
-	endCell   = strcat(char(cell_pos), rowStr);
-	xlRange = strcat(startCell, endCell)
-	#xlswrite(output_file, img_name, sheet, firstCell);
-	xlswrite(output_file, entry, sheet, xlRange);
-
-
-	row = row+1;
+  rowStr = num2str(row);
+  rowStrEnd = num2str(row+num_axles-1);
+  firstCell  = strcat(char(offset+1), rowStr);
+	secondCell = strcat(char(offset+2), rowStr);
+  startCell  = strcat(char(offset+3), rowStr);
+  endCell    = strcat(char(offset+3+size(axle_data,2)-1), rowStrEnd);
+  xlRange    = strcat(startCell, ':', endCell);
+  
+  xls = oct2xls(cellstr(img_name), xls, 'Sheet1', firstCell);
+  xls = oct2xls(num_axles, xls,'Sheet1', secondCell);
+  xls = oct2xls(axle_data, xls, 'Sheet1', xlRange);
+  
+  %xlswrite(output_file, cellstr(img_name), 'Sheet1', firstCell);
+  %xlswrite(output_file, num_axles, 'Sheet1', secondCell);
+  %xlswrite(output_file, axle_data, 'Sheet1', xlRange);
+        
+  row = row + num_axles;
+  xlsclose(xls)
 end
