@@ -1,11 +1,11 @@
 function [axle_data] = detect_axle(input_data, minima_locations, maxima_locations, to_file)
-	axle_data = [];
+	axle_data = double([]);
 	new_maxima_locations = [];
 	fig = figure;
 	set(fig, "visible", "off")
 	#disp('Plotting section')
 	plot(input_data)
-
+  minima_locations;
 	for n = 1 : numel(minima_locations)
 		indx = find(maxima_locations < minima_locations(n));
 		last_smaller = indx(end);
@@ -15,54 +15,55 @@ function [axle_data] = detect_axle(input_data, minima_locations, maxima_location
 		if peakl < peakr
 		#search right
 			pos = minima_locations(n);
-			while input_data(pos) < peakl
+			while (input_data(pos) < peakl) && (pos < numel(input_data))
 				pos = pos + 1;
 			end
-			new_maxima_locationsnew_maxima_locations = [new_maxima_locations maxima_locations(last_smaller) pos];
+			new_maxima_locations = [new_maxima_locations maxima_locations(last_smaller) pos];
 		elseif peakr < peakl
 		#search left
 			pos = minima_locations(n);
-			while input_data(pos) < peakr
+			while (input_data(pos) < peakr) && (pos >= 1) 
 				pos = pos - 1;
 			end
 			new_maxima_locations = [new_maxima_locations pos maxima_locations(last_smaller+1)];
 		else
 			new_maxima_locations = [new_maxima_locations maxima_locations(last_smaller) maxima_locations(last_smaller+1)];
 		end
+    
     leftH = input_data(new_maxima_locations(end));
     rightH = input_data(new_maxima_locations(end-1));
-    min_low = input_data(centerx);
-		centery = min([leftH rightH]);
-		centerx = minima_locations(n);
-		r = centery - min_low;
+		cntry = min([leftH rightH]);
+		cntrx = minima_locations(n);
+    
+    min_low = input_data(cntrx);
+		r = cntry - min_low;
 		rb = r;
-		ra = min([(new_maxima_locations(end) - centerx) (centerx - new_maxima_locations(end-1))]);
+		ra = min([(new_maxima_locations(end) - cntrx) (cntrx - new_maxima_locations(end-1))]);
 		S = 'g';
-		if (input_data(centerx) > 0)
-			#printf("input_data %d\n", centerx);
+
+		if (input_data(cntrx) > 0)
+			#printf("input_data %d\n", cntrx);
 			ellipse_area = ra*rb*pi/2;
-			start = centerx - ra;
-			stop = centerx + ra;
+			start = cntrx - ra;
+			stop = cntrx + ra;
 			area_under = sum(input_data(start:stop));
 			
-			area_over = 2*ra*centery - area_under;
+			area_over = 2*ra*cntry - area_under;
 			#double([ellipse_area area_over (ellipse_area./area_over)])
 			ratioo = double(double(ellipse_area)/double(area_over));
-      rel_pos = centerx*100/numel(input_data);
+      rel_pos = cntrx*100/numel(input_data);
 			%% do this only for confirmed lifted axles
-			if (area_over > 0) && (ellipse_area > 200) && (ratioo <= 1.5) && (ratioo >= 0.6)
+			if (area_over > 300)  && (ellipse_area > 200) && (ratioo <= 1.5) && (ratioo >= 0.6) && (rel_pos > 10)
 				#disp('Drawing elipse')
-				axle_data = [axle_data; [centerx, centery, ra, rb, min_low, leftH, ...
-                     rightH, area_over, rel_pos, ratio]];
-                    
-        area_over, ratioo]];
+				axle_data = double([axle_data; [cntrx, cntry, ra, rb, min_low, leftH, ...
+                     rightH, area_over, ratioo, rel_pos]]);
 				hold on
-				drawEllipse(centerx, centery, ra, rb, S);
+				drawEllipse(cntrx, cntry, ra, rb, S);
 			end
 
 		end
 
-		#DrawCircle(centerx, centery, r, int16(r)*4, S);
+		#DrawCircle(cntrx, cntry, r, int16(r)*4, S);
 
 	end
 

@@ -29,13 +29,13 @@ image_dir = strcat('..', filesep(), 'axle_images');
 %create output dirs and subdirs if not existing
 output_dir = strcat('..', filesep(), 'reports');
 if (exist(output_dir, 'dir') ~= 7)
-	mkdir(output_dir)
+	mkdir(output_dir);
 end
 output_subdir1 = strcat(output_dir, filesep(), 'plotting');
 if (exist(output_subdir1, 'dir') ~= 7)
-	mkdir(output_subdir1)
+	mkdir(output_subdir1);
 end
-
+output_xlsx = strcat(output_dir, filesep(), 'axle_images', '.xlsx');
 
 % GLOBAL VARIABLES
 
@@ -55,6 +55,11 @@ image_count = size(image_list, 1);
 
 printf("Loaded %d images\n\n", image_count);
 
+if image_count == 0
+  return;
+end
+
+xls = xlsopen(output_xlsx, 1); %open with RW access
 %% for each image in list perform workflow
 
 for img_ind = 1 : image_count
@@ -88,10 +93,11 @@ for img_ind = 1 : image_count
 	[axle_data] = detect_axle(bottom_edge, axle_bottom, axle_sides, plot_output_path);
 
 	% FINALIZE
-	%write_vehicle_metadata(fname, axle_data);
+	xls = write_vehicle_metadata(fname, axle_data, xls);
 
 end	
 
+xlsclose(xls);
 
 %%  HOUGH TRANSFOR CODE : DEPRECATED
 %%  BLUR_LEVEL = 3; # 0 - no blur, 1 - blur up, 2 - blur up and left, 3 - blur up, left and right

@@ -1,4 +1,4 @@
-function [success] = write_vehicle_metadata(img_name, axle_data)
+function [xls_fptr] = write_vehicle_metadata(img_name, axle_data, xls)
 %% img_name - string with file name
 %% axle_data - array containing following elements which
 %% describe axle (cx, cy, ra, rb, min_point, left_edge, right_edge
@@ -20,11 +20,7 @@ function [success] = write_vehicle_metadata(img_name, axle_data)
 %%  lenght given in percentage units
 
 	global OUTPUT_FILE_PATH;
-	persistent output_file = '../reports/report.xlsx';
-  if exist('../reports', 'dir') ~= 7
-    mkdir('../reports');
-  end
-	row = 3;
+	persistent row = 3;
   
   num_axles = size(axle_data, 1);
   data_size = size(axle_data, 2);
@@ -33,7 +29,7 @@ function [success] = write_vehicle_metadata(img_name, axle_data)
   end
      
 
-  xls = xlsopen(output_file, 1); %open with RW access
+
 	sheet = 'Sheet1';
 	offset = 64; %ascii value before first column
   if row == 3
@@ -64,5 +60,6 @@ function [success] = write_vehicle_metadata(img_name, axle_data)
   %xlswrite(output_file, axle_data, 'Sheet1', xlRange);
         
   row = row + num_axles;
-  xlsclose(xls);
+  %xlsclose(xls);
+  xls_fptr = xls;
 end
