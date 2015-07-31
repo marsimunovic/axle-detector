@@ -1,1 +1,5 @@
 *_images
+octave-workspace
+*.zip
+reports
+octave-packages
