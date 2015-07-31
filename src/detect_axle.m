@@ -77,4 +77,5 @@ function [axle_data] = detect_axle(input_data, minima_locations, maxima_location
 	printf("Saving %s\n", to_file );
 	hold on
 	print(fig, to_file,'-dgif')
+	close(fig)
 end
