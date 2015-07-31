@@ -6,6 +6,8 @@
 close all
 clear all
 clc
+
+disp("Initalizing environment...")
 %enable instant printing and printing to file support
 more off
 graphics_toolkit("gnuplot")
@@ -24,7 +26,7 @@ warning("off", "Octave:GraphicsMagic-Quantum-Depth");
 % output_dir - top directory for output files (reports, images, etc.)
 % output_subdir1 - directory for plots withcd  detected axles
 
-top_dir_name = '655000_images';
+top_dir_name = 'A670000_images';
 
 image_dir = strcat('..', filesep(), top_dir_name);
 %create output dirs and subdirs if not existing
@@ -58,7 +60,7 @@ global LOWER_PART = 80; %determines how many lower pixels of vehicle image will 
 
 %get image list
 disp("Loading files. This might take a while...");
-pause(1);
+
 
 image_list = getAllFiles(image_dir);
 image_count = size(image_list, 1);
