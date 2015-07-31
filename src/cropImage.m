@@ -32,6 +32,7 @@ function [Xcrop] = cropImage(image_matrix_binary)
 		end
 	end
 	lastCol = firstCol;
+	countFront = 0;
 	for n = width:-1:firstCol
 		blacks = sum(Xcrop(:, n) == 0);
 		if (blacks)
@@ -40,11 +41,10 @@ function [Xcrop] = cropImage(image_matrix_binary)
 			countFront = 0;
 		end
 		if countFront > MIN_PIX_REPETITION
-			lastCol = n + MIN_PIX_REPETITION;
+			lastCol = n + MIN_PIX_REPETITION-1;
 			break;
 		end
 	end
-
 	%% crop image (leave only detected vehicle)
 	Xcrop = Xcrop(:, firstCol:lastCol);
 

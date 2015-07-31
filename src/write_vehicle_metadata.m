@@ -21,7 +21,7 @@ function [xls_fptr] = write_vehicle_metadata(img_name, axle_data, xls)
 
 	global OUTPUT_FILE_PATH;
 	persistent row = 3;
-  
+  xls_fptr = xls;
   num_axles = size(axle_data, 1);
   data_size = size(axle_data, 2);
   if num_axles == 0
@@ -35,7 +35,7 @@ function [xls_fptr] = write_vehicle_metadata(img_name, axle_data, xls)
   if row == 3
     %%new file
     col_names = {'Name', 'AxlCnt', 'CX', 'CY', 'RA', 'RB', ...
-                'MinPoint', 'Left', 'Right', 'Area', 'Ratio', 'RelPos'};
+                'MinPoint', 'Left', 'Right', 'Area', 'VehicleLen'};
     assert((numel(col_names) == (data_size + 2))); %if something is wrong
     xlRange = strcat(char(offset+1),'1',':',char(offset+numel(col_names)),'1');
     xls = oct2xls(cellstr(col_names), xls, sheet,  xlRange);            

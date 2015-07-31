@@ -3,11 +3,15 @@ function [axle_bottom, axle_sides] = find_axle_candidates(input_data, file_name 
 	%%
 	axle_bottom = [];
 	axle_sides = [];
+	if (numel(input_data) < 50)
+		return;
+	end
 	[output, offset] = han_filter(input_data);
+	
 
 	MIN_TYRE_WIDTH = 60;       %min tyre width in pixels
 	MAX_PIXEL_VARATION = 3;    %maximum pixel variation between two neighbor minima
-	MAX_LIFTED_HEIGHT = 12;    %lowest point of lifted tyre in pixels
+	MAX_LIFTED_HEIGHT = 10;    %lowest point of lifted tyre in pixels
 	MIN_TYRE_RADIUS = 5;       %min lifted tyre radius 	
 	MAX_EDGE_HEIGHT_RATIO = 5; %ration between tyre left and right edge heights
 
@@ -22,11 +26,16 @@ function [axle_bottom, axle_sides] = find_axle_candidates(input_data, file_name 
 	locsrSorted = sort(locsr);
 	pksr = output(locsrSorted);
 
+	if(numel(locsSortex) == 0 || numel(locsrSorted) == 0)
+		return
+	end
+
 	%if last minima after last maxima add new
 	% maxima to the end of the vehicle contour
 	last_min = locsrSorted(end);
 	amp_min = output(last_min);
 	last_max = last_min;
+
 	if (last_min > locsSortex(end))
 		#minima is last, find maxima
 		for n = last_min + 1: numel(input_data)

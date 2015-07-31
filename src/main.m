@@ -24,18 +24,28 @@ warning("off", "Octave:GraphicsMagic-Quantum-Depth");
 % output_dir - top directory for output files (reports, images, etc.)
 % output_subdir1 - directory for plots withcd  detected axles
 
+top_dir_name = '655000_images';
 
-image_dir = strcat('..', filesep(), 'axle_images');
+image_dir = strcat('..', filesep(), top_dir_name);
 %create output dirs and subdirs if not existing
 output_dir = strcat('..', filesep(), 'reports');
 if (exist(output_dir, 'dir') ~= 7)
 	mkdir(output_dir);
 end
-output_subdir1 = strcat(output_dir, filesep(), 'plotting');
+output_subdir1 = strcat(output_dir, filesep(), 'plotting', filesep(), top_dir_name);
 if (exist(output_subdir1, 'dir') ~= 7)
 	mkdir(output_subdir1);
 end
-output_xlsx = strcat(output_dir, filesep(), 'axle_images', '.xlsx');
+output_subdir2 = strcat(output_dir, filesep(), 'selected', filesep(), top_dir_name);
+if (exist(output_subdir2, 'dir') ~= 7)
+	mkdir(output_subdir2);
+end
+
+output_xlsx = strcat(output_dir, filesep(), top_dir_name, '.xlsx');
+if (exist(output_xlsx, 'file') == 2)
+	delete(output_xlsx);
+end
+output_selected = strcat(output_dir, filesep, top_dir_name, '_sel', '.txt');
 
 % GLOBAL VARIABLES
 
@@ -60,6 +70,7 @@ if image_count == 0
 end
 
 xls = xlsopen(output_xlsx, 1); %open with RW access
+txt_list = fopen(output_selected, 'w');
 %% for each image in list perform workflow
 
 for img_ind = 1 : image_count
@@ -70,6 +81,7 @@ for img_ind = 1 : image_count
 		end
 	end
 	printf("Image %s\n", image_list{img_ind});
+	
 
 	% first LOAD image to matrix
 	[Xorig, Xbin] = getImageMatrix(image_list{img_ind});
@@ -93,14 +105,22 @@ for img_ind = 1 : image_count
 	[axle_data] = detect_axle(bottom_edge, axle_bottom, axle_sides, plot_output_path);
 
 	% FINALIZE
+	if size(axle_data, 1) > 0
+		fprintf(txt_list, "%s\n", image_list{img_ind});
+	end
 	xls = write_vehicle_metadata(fname, axle_data, xls);
 
 end	
-
 xlsclose(xls);
+fclose(txt_list);
+
+python_command = cstrcat("python extract_images.py", " ", output_selected, " ", ...
+					    	output_subdir1, " ", output_subdir2);
+ot = system(python_command, 1);
 
 %%  HOUGH TRANSFOR CODE : DEPRECATED
-%%  BLUR_LEVEL = 3; # 0 - no blur, 1 - blur up, 2 - blur up and left, 3 - blur up, left and right
+%%  BLUR_LEVEL = 3; # 0 - no blur, 1 - blur up, 
+%%  2 - blur up and left, 3 - blur up, left and right
 %%	RADII = [40 80];
 %%	image_matrix = signal2image(bottom_edge, BLUR_LEVEL);
 %%	# analys bottom contour

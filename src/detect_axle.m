@@ -5,7 +5,7 @@ function [axle_data] = detect_axle(input_data, minima_locations, maxima_location
 	set(fig, "visible", "off")
 	#disp('Plotting section')
 	plot(input_data)
-  minima_locations;
+  
 	for n = 1 : numel(minima_locations)
 		indx = find(maxima_locations < minima_locations(n));
 		last_smaller = indx(end);
@@ -51,12 +51,13 @@ function [axle_data] = detect_axle(input_data, minima_locations, maxima_location
 			area_over = 2*ra*cntry - area_under;
 			#double([ellipse_area area_over (ellipse_area./area_over)])
 			ratioo = double(double(ellipse_area)/double(area_over));
-      rel_pos = cntrx*100/numel(input_data);
+			vehicle_len = numel(input_data);
+      		rel_pos = double(cntrx)*100/vehicle_len;
 			%% do this only for confirmed lifted axles
-			if (area_over > 300)  && (ellipse_area > 200) && (ratioo <= 1.5) && (ratioo >= 0.6) && (rel_pos > 10)
+			if (cntry < 30) && (area_over > 300)  && (ellipse_area > 200) && (ratioo <= 1.5) && (ratioo >= 0.6) && (rel_pos > 15)
 				#disp('Drawing elipse')
 				axle_data = double([axle_data; [cntrx, cntry, ra, rb, min_low, leftH, ...
-                     rightH, area_over, ratioo, rel_pos]]);
+                     rightH, area_over, vehicle_len]]);
 				hold on
 				drawEllipse(cntrx, cntry, ra, rb, S);
 			end

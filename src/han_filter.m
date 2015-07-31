@@ -9,7 +9,9 @@ function [output, offset] = han_filter(input_data)
 	if (numel(input_data) < 500)
 		window_len = numel(input_data)*0.05;
 	end
-
+	if(window_len < 3)
+		window_len = 3;
+	end
 	offset = int16(floor(window_len/2));
 	N = window_len;
 	n = 0:N-1;
