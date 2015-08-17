@@ -27,6 +27,8 @@ warning("off", "Octave:GraphicsMagic-Quantum-Depth");
 % output_subdir1 - directory for plots withcd  detected axles
 
 top_dir_name = '710000_images';
+#top_dir_name = 'axle_images';
+#top_dir_name = 'rainy_images';
 
 image_dir = strcat('..', filesep(), top_dir_name);
 %create output dirs and subdirs if not existing
@@ -53,7 +55,7 @@ output_selected = strcat(output_dir, filesep, top_dir_name, '_sel', '.txt');
 
 global DEBUG_ACTIVE = 0;
 global DEBUG_LEVEL = 0;
-global DEBUG_COUNT_IMAGES = 1;
+global DEBUG_COUNT_IMAGES = 2;
 global LOWER_PART = 80; %determines how many lower pixels of vehicle image will be used
 
  

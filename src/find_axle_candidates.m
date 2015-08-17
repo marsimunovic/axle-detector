@@ -7,7 +7,6 @@ function [axle_bottom, axle_sides] = find_axle_candidates(input_data, file_name 
 		return;
 	end
 	[output, offset] = han_filter(input_data);
-	
 
 	MIN_TYRE_WIDTH = 60;       %min tyre width in pixels
 	MAX_PIXEL_VARATION = 3;    %maximum pixel variation between two neighbor minima
@@ -15,41 +14,62 @@ function [axle_bottom, axle_sides] = find_axle_candidates(input_data, file_name 
 	MIN_TYRE_RADIUS = 5;       %min lifted tyre radius 	
 	MAX_EDGE_HEIGHT_RATIO = 5; %ration between tyre left and right edge heights
 
-	%find local extremes in bottom contour
-	% LOCAL MAXIMA (indices and amplitudes)
-	[pks, locs] = findpeaks(output);
-	[locsSortex, SortedIndex] = sort(locs);
-	pksSorted = pks(SortedIndex); 
-	reverse = (max(output(:)) + 1) - output;
-	% LOCAL MINIMA (indices and amplitudes)
-	[pksr, locsr] = findpeaks(reverse); 
-	locsrSorted = sort(locsr);
-	pksr = output(locsrSorted);
-
-	if(numel(locsSortex) == 0 || numel(locsrSorted) == 0)
+	[peaks, peaks_min] = find_peaks_manual(output);
+	if(numel(peaks_min) == 0 || numel(peaks) == 0)
 		return
 	end
+	
+	#figure
+	#plot(output)
+	#hold on
+	#plot(peaks, output(peaks), 'go');
+	#hold on
+	#plot(peaks_min, output(peaks_min), 'rx');
 
-	%if last minima after last maxima add new
-	% maxima to the end of the vehicle contour
-	last_min = locsrSorted(end);
-	amp_min = output(last_min);
-	last_max = last_min;
-
-	if (last_min > locsSortex(end))
-		#minima is last, find maxima
-		for n = last_min + 1: numel(input_data)
-			if output(n) >=	amp_min
-				amp_min = output(n);
-				last_max = n;
-			end
-		end
-		locsSortex = [locsSortex last_max];
-		pks = [pks output(last_max)];
-	end
+	#%find local extremes in bottom contour
+	#% LOCAL MAXIMA (indices and amplitudes)
+	#[pks, locs] = findpeaks(output);
+	#[locsSortex, SortedIndex] = sort(locs);
+	#pksSorted = pks(SortedIndex); 
+	#reverse = (max(output(:)) + 1) - output;
+	#% LOCAL MINIMA (indices and amplitudes)
+	#[pksr, locsr] = findpeaks(reverse); 
+	#locsrSorted = sort(locsr);
+	#pksr = output(locsrSorted);
+#
+#	#if(numel(locsSortex) == 0 || numel(locsrSorted) == 0)
+#	#	return
+#	#end
+#
+#	#%if last minima after last maxima add new
+#	#% maxima to the end of the vehicle contour
+#	#last_min = locsrSorted(end);
+#	#amp_min = output(last_min);
+#	#last_max = last_min;
+#
+#	#if (last_min > locsSortex(end))
+#	#	#minima is last, find maxima
+#	#	for n = last_min + 1: numel(input_data)
+#	#		if output(n) >=	amp_min
+#	#			amp_min = output(n);
+#	#			last_max = n;
+#	#		end
+#	#	end
+#	#	locsSortex = [locsSortex last_max];
+#	#	pks = [pks output(last_max)];
+	#end
 
 	minima_locations = int16([]);
 	maxima_locations = int16([]);
+
+	#merge double minima
+
+
+
+	#create candidate structures
+
+	locsSortex = peaks;
+	locsrSorted = peaks_min;
 
 
 	for n = 2:length(locsSortex)
