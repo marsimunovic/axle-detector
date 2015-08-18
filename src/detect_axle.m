@@ -1,6 +1,9 @@
 function [axle_data] = detect_axle(input_data, minima_locations, maxima_locations, to_file)
 	axle_data = double([]);
 	new_maxima_locations = [];
+
+	MAX_EDGE_HEIGHT_DIFF = 10; %difference between tyre left and right edge heights
+
 	fig = figure;
 	set(fig, "visible", "off")
 	#disp('Plotting section')
@@ -41,7 +44,7 @@ function [axle_data] = detect_axle(input_data, minima_locations, maxima_location
 		ra = min([(new_maxima_locations(end) - cntrx) (cntrx - new_maxima_locations(end-1))]);
 		S = 'g';
 
-		if (input_data(cntrx) > 0)
+		if (input_data(cntrx) > 0 && (abs(leftH-rightH) <= MAX_EDGE_HEIGHT_DIFF))
 			#printf("input_data %d\n", cntrx);
 			ellipse_area = ra*rb*pi/2;
 			start = cntrx - ra;
@@ -54,7 +57,7 @@ function [axle_data] = detect_axle(input_data, minima_locations, maxima_location
 			vehicle_len = numel(input_data);
       		rel_pos = double(cntrx)*100/vehicle_len;
 			%% do this only for confirmed lifted axles
-			if (cntry < 30) && (area_over > 300)  && (ellipse_area > 200) && (ratioo <= 1.5) && (ratioo >= 0.6) && (rel_pos > 15)
+			if (cntry < 30) && (area_over > 300)  && (ellipse_area > 200) && (ratioo <= 1.5) && (ratioo >= 0.6) && (rel_pos > 20)
 				#disp('Drawing elipse')
 				axle_data = double([axle_data; [cntrx, cntry, ra, rb, min_low, leftH, ...
                      rightH, area_over, vehicle_len]]);

@@ -1,9 +1,10 @@
-function [peaks, peaks_min] = find_peaks_manual(input_data)
+function [peaks, peaks_min, axle_candidates] = find_peaks_manual(input_data)
 %%find local maxima in input signal
 %%input_data - smooth input signal
 %%peaks - location indices of maxima values
 	peaks = [];
 	peaks_min = [];
+	axle_candidates = [];
 	ind = 1;
 	max_cand = input_data(1);
 	N = size(input_data,2);
@@ -39,5 +40,13 @@ function [peaks, peaks_min] = find_peaks_manual(input_data)
 		offset = int16(offset/2);
 		loc = loc + offset;
 		peaks_min = [peaks_min loc];
+
+		%%compresses peak values in candidates structures
+		%%each structure has three points, tyre lowest point and
+		%%left and right tyre edges
+		new_candidate.lt = peaks(n-1);
+		new_candidate.rt = peaks(n);
+		new_candidate.loc = loc;
+		axle_candidates = [axle_candidates new_candidate];
 	end
 end

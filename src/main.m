@@ -26,15 +26,19 @@ warning("off", "Octave:GraphicsMagic-Quantum-Depth");
 % output_dir - top directory for output files (reports, images, etc.)
 % output_subdir1 - directory for plots withcd  detected axles
 
-top_dir_name = '710000_images';
-#top_dir_name = 'axle_images';
+top_dir_name = '655000_images';
 #top_dir_name = 'rainy_images';
+#top_dir_name = 'axle_images';
 
 image_dir = strcat('..', filesep(), top_dir_name);
 %create output dirs and subdirs if not existing
 output_dir = strcat('..', filesep(), 'reports');
 if (exist(output_dir, 'dir') ~= 7)
 	mkdir(output_dir);
+	plot_dir = strcat(output_dir, filesep(), 'plotting');
+	mkdir(plot_dir);
+	sel_dir = strcat(output_dir, filesep(), 'selected');
+	mkdir(sel_dir);
 end
 output_subdir1 = strcat(output_dir, filesep(), 'plotting', filesep(), top_dir_name);
 if (exist(output_subdir1, 'dir') ~= 7)
@@ -42,6 +46,11 @@ if (exist(output_subdir1, 'dir') ~= 7)
 end
 output_subdir2 = strcat(output_dir, filesep(), 'selected', filesep(), top_dir_name);
 if (exist(output_subdir2, 'dir') ~= 7)
+	mkdir(output_subdir2);
+else
+	old_val = confirm_recursive_rmdir(0);
+	rmdir(output_subdir2);
+	confirm_recursive_rmdir(old_val);
 	mkdir(output_subdir2);
 end
 
@@ -56,7 +65,7 @@ output_selected = strcat(output_dir, filesep, top_dir_name, '_sel', '.txt');
 global DEBUG_ACTIVE = 0;
 global DEBUG_LEVEL = 0;
 global DEBUG_COUNT_IMAGES = 2;
-global LOWER_PART = 80; %determines how many lower pixels of vehicle image will be used
+global LOWER_PART = 70; %determines how many lower pixels of vehicle image will be used
 
  
 

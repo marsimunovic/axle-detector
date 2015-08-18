@@ -4,10 +4,16 @@ function [output, offset] = han_filter(input_data)
 %%	input_data - bottom vehicle contour
 %%  output - filtered contour
 %%  offset - shift introduced by filter
-
-	window_len = 40;
-	if (numel(input_data) < 500)
-		window_len = numel(input_data)*0.05;
+	N = numel(input_data);
+	window_len = 30;
+	if (N > 1300)
+		window_len = 40;
+	end
+	if (N < 500)
+		window_len = 20;
+	end
+	if (N < 250)
+		window_len = 10;
 	end
 	if(window_len < 3)
 		window_len = 3;
