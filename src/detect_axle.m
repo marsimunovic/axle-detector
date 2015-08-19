@@ -56,13 +56,16 @@ function [axle_data] = detect_axle(input_data, minima_locations, maxima_location
 			ratioo = double(double(ellipse_area)/double(area_over));
 			vehicle_len = numel(input_data);
       		rel_pos = double(cntrx)*100/vehicle_len;
+     
 			%% do this only for confirmed lifted axles
-			if (cntry < 30) && (area_over > 300)  && (ellipse_area > 200) && (ratioo <= 1.5) && (ratioo >= 0.6) && (rel_pos > 20)
+			if (cntry < 30) && (ratioo <= 2.1) && (ratioo >= 0.6) && (rel_pos > 20)
 				#disp('Drawing elipse')
 				axle_data = double([axle_data; [cntrx, cntry, ra, rb, min_low, leftH, ...
                      rightH, area_over, vehicle_len]]);
 				hold on
 				drawEllipse(cntrx, cntry, ra, rb, S);
+			else
+				[cntry, area_over, ellipse_area, ratioo, rel_pos]
 			end
 
 		end

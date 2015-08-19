@@ -5,9 +5,9 @@ function [output, offset] = han_filter(input_data)
 %%  output - filtered contour
 %%  offset - shift introduced by filter
 	N = numel(input_data);
-	window_len = 30;
-	if (N > 1300)
-		window_len = 40;
+	window_len = 40;
+	if (N < 700)
+		window_len = 30;
 	end
 	if (N < 500)
 		window_len = 20;
@@ -18,7 +18,7 @@ function [output, offset] = han_filter(input_data)
 	if(window_len < 3)
 		window_len = 3;
 	end
-	offset = int16(floor(window_len/2));
+	offset = int16(floor(window_len/2))-1;
 	N = window_len;
 	n = 0:N-1;
 	b = 0.5*(1 - cos(2*pi*n/(N-1)));

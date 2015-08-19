@@ -4,23 +4,41 @@ function [axle_bottom, axle_sides] = find_axle_candidates(input_data, file_name 
 	global DEBUG_ACTIVE
 	axle_bottom = [];
 	axle_sides = [];
-	if (numel(input_data) < 300)
+	axle_widths = [];
+	if (numel(input_data) < 350)
 		return;
 	end
 	[output, offset] = han_filter(input_data);
 
-	MIN_TYRE_WIDTH = 50;       %min tyre width in pixels
+	MIN_TYRE_WIDTH = 40;       %min tyre width in pixels
 	MAX_PIXEL_VARATION = 3;    %maximum pixel variation between two neighbor minima
 	MAX_LIFTED_HEIGHT = 10;    %lowest point of lifted tyre in pixels
 	MIN_TYRE_RADIUS = 5;       %min lifted tyre radius 	
 	MAX_EDGE_HEIGHT_RATIO = 5; %ratio between tyre left and right edge heights
+	WIDTH_PERCENTAGE = 0.5;    %min percentage of real axle width in candidates
 
 	[peaks, peaks_min, axle_candidates] = find_peaks_manual(output, offset);
 	if(numel(peaks_min) == 0 || numel(peaks) == 0)
 		return
 	end
-
+	#size(axle_candidates,2)
 	for n = 1 : size(axle_candidates, 2)
+
+		if(output(axle_candidates(n).lt) < output(axle_candidates(n).rt))
+			#disp('moving left')
+			#axle_candidates(n).loc
+			while (output(axle_candidates(n).lt) < output(axle_candidates(n).rt - 1))
+				axle_candidates(n).rt = axle_candidates(n).rt - 1;
+				#[output(axle_candidates(n).lt), output(axle_candidates(n).rt)]
+			end
+		elseif(output(axle_candidates(n).lt) > output(axle_candidates(n).rt))
+			#disp('moving right')
+			while (output(axle_candidates(n).lt + 1) > output(axle_candidates(n).rt))
+				axle_candidates(n).lt = axle_candidates(n).lt + 1;
+			end
+		else
+			#do nothing if equal
+		end
 		lt = axle_candidates(n).lt - offset;
 		rt = axle_candidates(n).rt - offset;
 		loc = axle_candidates(n).loc;
@@ -29,24 +47,64 @@ function [axle_bottom, axle_sides] = find_axle_candidates(input_data, file_name 
 			axle_candidates(n).lt = axle_candidates(n).lt + 1;
 		end
 		while(rt > loc) && (input_data(rt) == input_data(rt-1))
+
 			rt = rt-1;
 			axle_candidates(n).rt = axle_candidates(n).rt - 1;
 		end
+
+#		limleft = lt + (loc-lt)*0.20;
+#		same_cnt = 0;
+#		shift = 0;
+#		for n = limleft:-1:lt
+#			if (input_data(n) == input_data(n-1))
+#				same_cnt = same_cnt + 1;
+#				if same_cnt >= 4
+#					disp('found line')
+#					shift = limleft + 3 + offset;
+#					break;
+#				end
+#			else
+#				same_cnt = 0;
+#			end
+#		end
+#		axle_candidates(n).lt = shift;
+#		limright = rt - (rt-loc)*0.20;
+#		same_cnt = 0;
+#		for n = limright:rt
+#			if (input_data(n) == input_data(n+1))
+#				same_cnt = same_cnt + 1;
+#				if same_cnt >= 4
+#					disp('found line')
+#					shift = limright-3+offset;
+#					break;
+#				end
+#			else
+#				same_cnt = 0;
+#			end
+#		end
+#		axle_candidates(n).rt = shift;
+
+		
+
+		if (output(loc) < 0.5)
+			#disp('zero location')
+			ax_w = min(axle_candidates(n).loc - axle_candidates(n).lt, ...
+					   axle_candidates(n).rt - axle_candidates(n).loc);
+			axle_widths = [axle_widths ax_w];
+		else
+			#output(loc);
+		end
 	end
-
-
-#	figure
-#	plot(input_data)
-#	hold on
-#	plot(peaks-offset, input_data(peaks-offset), 'go');
-#	hold on
-#	plot(peaks_min-offset, input_data(peaks_min-offset), 'rx');
-#	figure
-#	plot(output)
-#	hold on
-#	plot(peaks, output(peaks), 'go');
-#	hold on
-#	plot(peaks_min, output(peaks_min), 'rx');
+	#axle_widths
+	
+	if DEBUG_ACTIVE > 3
+		figure
+		plot(output)
+		hold on
+		plot(peaks, output(peaks), 'go');
+		hold on
+		plot(peaks_min, output(peaks_min), 'rx');
+	end
 
 	#%find local extremes in bottom contour
 	#% LOCAL MAXIMA (indices and amplitudes)
@@ -92,6 +150,9 @@ function [axle_bottom, axle_sides] = find_axle_candidates(input_data, file_name 
 
 #	locsSortex = peaks;
 #	locsrSorted = peaks_min;
+	[firstw, ind1] = max(axle_widths);
+	axle_widths(ind1) = 0;
+	secondw = max(axle_widths);
 
 	for n = 1 : size(axle_candidates, 2)
 		indl = axle_candidates(n).lt;
@@ -125,6 +186,7 @@ function [axle_bottom, axle_sides] = find_axle_candidates(input_data, file_name 
 			end
 			continue
 		end
+		#[distyr, distyl]
 		upper_edge = max([distyr distyl]);
 		lower_edge = min([distyl distyr]);
 		ratioo = upper_edge/lower_edge;
@@ -134,6 +196,37 @@ function [axle_bottom, axle_sides] = find_axle_candidates(input_data, file_name 
 			end
 			continue
 		end
+		if (numel(axle_widths) < 2)
+			if DEBUG_ACTIVE
+				disp('Error! Missing axles')
+			end
+		else
+			half_radius = min(ind_min - indl, indr - ind_min);
+			checker = 0;
+			if (firstw/secondw) >= 2
+				disp('Big difference between two low axles')
+				#first check smaller
+				greater = max(half_radius, secondw);
+				smaller = min(half_radius, secondw);
+				if smaller > greater*WIDTH_PERCENTAGE				
+					checker = checker + 1;
+				end
+			end
+			greater = max(half_radius, firstw);
+			smaller = min(half_radius, firstw);
+			if smaller > greater*WIDTH_PERCENTAGE
+				checker = checker + 1;
+			end
+			if checker == 0
+				if DEBUG_ACTIVE
+					disp('to thin')
+					[half_radius, firstw, secondw]
+				end
+				continue
+			end
+		
+		end	
+
 		minima_locations = [minima_locations int16(ind_min-offset)];
 		maxima_locations = [maxima_locations int16(indl-offset) int16(indr-offset)];
 	end
@@ -206,7 +299,20 @@ function [axle_bottom, axle_sides] = find_axle_candidates(input_data, file_name 
 
 	end
 #}
-
+	if DEBUG_ACTIVE > 2
+		figure
+		plot(output)
+		hold on
+		plot(maxima_locations+offset, output(maxima_locations+offset), 'go');
+		hold on
+		plot(minima_locations+offset, output(minima_locations+offset), 'rx');
+		figure
+		plot(input_data)
+		hold on
+		plot(maxima_locations, input_data(maxima_locations), 'go');
+		hold on
+		plot(minima_locations, input_data(minima_locations), 'rx');
+	end
 	axle_bottom = minima_locations;
 	axle_sides = maxima_locations;
 
