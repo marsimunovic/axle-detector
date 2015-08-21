@@ -26,7 +26,8 @@ warning("off", "Octave:GraphicsMagic-Quantum-Depth");
 % output_dir - top directory for output files (reports, images, etc.)
 % output_subdir1 - directory for plots withcd  detected axles
 
-top_dir_name = '665000_images';
+#top_dir_name = 'A665000_images';
+top_dir_name = '730000_images';
 #top_dir_name = 'rainy_images';
 #top_dir_name = 'axle_images';
 
