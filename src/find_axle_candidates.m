@@ -10,7 +10,7 @@ function [axle_bottom, axle_sides] = find_axle_candidates(input_data, file_name 
 	end
 	[output, offset] = han_filter(input_data);
 
-	MIN_TYRE_WIDTH = 40;       %min tyre width in pixels
+	MIN_TYRE_WIDTH = 20;       %min tyre width in pixels
 	MAX_PIXEL_VARATION = 3;    %maximum pixel variation between two neighbor minima
 	MAX_LIFTED_HEIGHT = 10;    %lowest point of lifted tyre in pixels
 	MIN_TYRE_RADIUS = 5;       %min lifted tyre radius 	
@@ -203,8 +203,9 @@ function [axle_bottom, axle_sides] = find_axle_candidates(input_data, file_name 
 		else
 			half_radius = min(ind_min - indl, indr - ind_min);
 			checker = 0;
-			if (firstw/secondw) >= 2
-				disp('Big difference between two low axles')
+			axle_ratio = double(1.0*firstw)./double(secondw);
+			if axle_ratio >= 1.2
+				#disp('Big difference between two low axles')
 				#first check smaller
 				greater = max(half_radius, secondw);
 				smaller = min(half_radius, secondw);

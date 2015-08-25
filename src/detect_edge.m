@@ -31,7 +31,10 @@ function [ bottom_edge ] = detect_edge( input_image )
 
     %% if difference between raw and filtered edge is greater than EDGE_DIFF
     %% filtered edge gets value of raw edge at that column
-    for n=1:width
+    for n=2:width-1
+        if bottom_edge(n-1) == bottom_edge(n+1)
+            bottom_edge(n) = bottom_edge(n-1);
+        end
         if(bottom_edge(n) + EDGE_DIFF <= bottom_edge_filt(n))
             bottom_edge_filt(n) = bottom_edge(n);
         end

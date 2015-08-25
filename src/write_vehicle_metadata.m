@@ -2,7 +2,7 @@ function [xls_fptr] = write_vehicle_metadata(img_name, axle_data, xls)
 %% img_name - string with file name
 %% axle_data - array containing following elements which
 %% describe axle (cx, cy, ra, rb, min_point, left_edge, right_edge
-%% tyre_area, ratio, rel_pos)
+%% tyre_area, drop, rel_pos)
 %% success - write status
 
 %% 	AXLE PROPERTIES
@@ -14,7 +14,7 @@ function [xls_fptr] = write_vehicle_metadata(img_name, axle_data, xls)
 %%  left_edge - detected left edge height
 %%  right_edge - detected right edge height
 %%  tyre_area - area of detected tyre (only lower half)
-%%  ratio - ratio of tyre_area and ellipse area where
+%%  drop - biggest local change in edge
 %%  ra and rb are semi-major and semi-minor axes
 %%  rel_pos - position of axle in relation to vehicle
 %%  lenght given in percentage units
@@ -35,7 +35,7 @@ function [xls_fptr] = write_vehicle_metadata(img_name, axle_data, xls)
   if row == 3
     %%new file
     col_names = {'Name', 'AxlCnt', 'CX', 'CY', 'RA', 'RB', ...
-                'MinPoint', 'Left', 'Right', 'Area', 'VehicleLen'};
+                'MinPoint', 'Left', 'Right', 'Drop', 'VehicleLen'};
     assert((numel(col_names) == (data_size + 2))); %if something is wrong
     xlRange = strcat(char(offset+1),'1',':',char(offset+numel(col_names)),'1');
     xls = oct2xls(cellstr(col_names), xls, sheet,  xlRange);            

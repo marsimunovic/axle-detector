@@ -46,10 +46,11 @@ function [Xcrop] = cropImage(image_matrix_binary)
 		end
 	end
 
-	#check noise in lower 5 pixels
-	crop = 1:height-LOWER_PART-3;
+	#check noise in lower N pixels
+	N = 3;
+	crop = 1:height-LOWER_PART-N;
 	add = [];
-	for m = height-2:height
+	for m = height-N+1:height
 		freq = 0;
 		for n = firstCol+1:lastCol
 			if image_matrix_binary(m, n) ~= image_matrix_binary(m,n-1)
@@ -64,6 +65,10 @@ function [Xcrop] = cropImage(image_matrix_binary)
 			add = [add (LOWER_PART - (height-m))];
 		end
 	end
+	#in next three rows fix pixel noise
+	#for m = height-N-3:height-N
+	#
+	#end
 	crop = [crop add];
 	%% crop image (leave only detected vehicle)
 	Xcrop = Xcrop(crop, firstCol:lastCol);
