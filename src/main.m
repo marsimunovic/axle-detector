@@ -26,8 +26,8 @@ warning("off", "Octave:GraphicsMagic-Quantum-Depth");
 % output_dir - top directory for output files (reports, images, etc.)
 % output_subdir1 - directory for plots withcd  detected axles
 
-#top_dir_name = 'A665000_images';
-top_dir_name = '710000_images';
+top_dir_name = '665000_images';
+#top_dir_name = '710000_images';
 #top_dir_name = 'rainy_images';
 #top_dir_name = 'axle_images';
 
@@ -65,8 +65,10 @@ output_selected = strcat(output_dir, filesep, top_dir_name, '_sel', '.txt');
 
 global DEBUG_ACTIVE = 0;
 global DEBUG_LEVEL = 0;
-global DEBUG_COUNT_IMAGES = 0;
+global DEBUG_COUNT_IMAGES = 4;
 global LOWER_PART = 70; %determines how many lower pixels of vehicle image will be used
+global MIN_AXCEPTED_LENGTH= 400; #narrower vehicles will not be examined
+global SAVING_ON = 0;
 
  
 
@@ -75,6 +77,8 @@ disp("Loading files. This might take a while...");
 
 
 image_list = getAllFiles(image_dir);
+#start measuring time from here
+tic();
 image_count = size(image_list, 1);
 
 printf("Loaded %d images\n\n", image_count);
@@ -82,11 +86,12 @@ printf("Loaded %d images\n\n", image_count);
 if image_count == 0
   return;
 end
+if SAVING_ON
+	xls = xlsopen(output_xlsx, 1); %open with RW access
+	txt_list = fopen(output_selected, 'w');
+end
 
-xls = xlsopen(output_xlsx, 1); %open with RW access
-txt_list = fopen(output_selected, 'w');
 %% for each image in list perform workflow
-
 for img_ind = 1 : image_count
 	if DEBUG_ACTIVE
 		#open image
@@ -107,30 +112,37 @@ for img_ind = 1 : image_count
 	bottom_edge = detect_edge(Xcrop);
 
 	% find AXLE CANDIDATES
-	[axle_bottom, axle_sides] = find_axle_candidates(bottom_edge, image_list{img_ind});
+	#[axle_bottom, axle_sides] = find_axle_candidates(bottom_edge, image_list{img_ind});
+	lifted_axles = find_axle_candidates_tmp(bottom_edge, image_list{img_ind});
 
-	if numel(axle_bottom) < 1 || numel(axle_sides) < 2
+	#if numel(axle_bottom) < 1 || numel(axle_sides) < 2
+	if isempty(lifted_axles)
 		continue;
 	end
 	% DETECT lifted axles 
 	fname = strsplit(image_list{img_ind}, filesep());
 	fname = fname {end};
 	plot_output_path = strcat(output_subdir1, filesep(), fname);
-	[axle_data] = detect_axle(Xcrop, bottom_edge, axle_bottom, axle_sides, plot_output_path);
+	#[axle_data] = detect_axle(Xcrop, bottom_edge, axle_bottom, axle_sides, plot_output_path);
+	[axle_data] = detect_axle_tmp(Xcrop, bottom_edge, lifted_axles, plot_output_path);
 
 	% FINALIZE
-	if size(axle_data, 1) > 0
-		fprintf(txt_list, "%s\n", image_list{img_ind});
+	if SAVING_ON
+		if size(axle_data, 1) > 0
+			fprintf(txt_list, "%s\n", image_list{img_ind});
+		end
+		xls = write_vehicle_metadata(fname, axle_data, xls);
 	end
-	xls = write_vehicle_metadata(fname, axle_data, xls);
-
-end	
-xlsclose(xls);
-fclose(txt_list);
-
-python_command = cstrcat("python extract_images.py", " ", output_selected, " ", ...
-					    	output_subdir1, " ", output_subdir2);
-ot = system(python_command, 1);
+end
+if SAVING_ON	
+	xlsclose(xls);
+	fclose(txt_list);
+	
+	python_command = cstrcat("python extract_images.py", " ", output_selected, " ", ...
+						    	output_subdir1, " ", output_subdir2);
+	ot = system(python_command, 1);
+end
+toc();
 
 %%  HOUGH TRANSFOR CODE : DEPRECATED
 %%  BLUR_LEVEL = 3; # 0 - no blur, 1 - blur up, 
