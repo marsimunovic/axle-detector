@@ -5,3 +5,7 @@ means that vehicle was moving to slow
 3. add max height criteria for axle candidates
 4. perform search for optimal left and right tire part in both
 directions, then, compare difference of their distances to minimum point
+5. check ratio between left and right half axle widths
+6. analyse contour between left and right edge in order to find
+horizontal parts
+
