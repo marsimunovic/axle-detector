@@ -1,4 +1,4 @@
-function [axle_data] = detect_axle_tmp(Xcrop, input_data, axle_candidates, to_file)
+function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 %%perform detection on selected candidates
 %%draw detections in gif file with bottom contour
 

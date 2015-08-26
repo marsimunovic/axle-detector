@@ -68,7 +68,7 @@ global DEBUG_LEVEL = 0;
 global DEBUG_COUNT_IMAGES = 4;
 global LOWER_PART = 70; %determines how many lower pixels of vehicle image will be used
 global MIN_AXCEPTED_LENGTH= 400; #narrower vehicles will not be examined
-global SAVING_ON = 0;
+global SAVING_ON = 1;
 
  
 
@@ -113,7 +113,7 @@ for img_ind = 1 : image_count
 
 	% find AXLE CANDIDATES
 	#[axle_bottom, axle_sides] = find_axle_candidates(bottom_edge, image_list{img_ind});
-	lifted_axles = find_axle_candidates_tmp(bottom_edge, image_list{img_ind});
+	lifted_axles = find_axle_candidates(bottom_edge, image_list{img_ind});
 
 	#if numel(axle_bottom) < 1 || numel(axle_sides) < 2
 	if isempty(lifted_axles)
@@ -124,7 +124,7 @@ for img_ind = 1 : image_count
 	fname = fname {end};
 	plot_output_path = strcat(output_subdir1, filesep(), fname);
 	#[axle_data] = detect_axle(Xcrop, bottom_edge, axle_bottom, axle_sides, plot_output_path);
-	[axle_data] = detect_axle_tmp(Xcrop, bottom_edge, lifted_axles, plot_output_path);
+	[axle_data] = detect_axle(Xcrop, bottom_edge, lifted_axles, plot_output_path);
 
 	% FINALIZE
 	if SAVING_ON
@@ -143,6 +143,7 @@ if SAVING_ON
 	ot = system(python_command, 1);
 end
 toc();
+exit();
 
 %%  HOUGH TRANSFOR CODE : DEPRECATED
 %%  BLUR_LEVEL = 3; # 0 - no blur, 1 - blur up, 

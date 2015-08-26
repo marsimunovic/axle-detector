@@ -1,4 +1,4 @@
-function [real_axle_candidates, aux_axle_candidates] = find_peaks_manual_tmp(input_data)
+function [real_axle_candidates, aux_axle_candidates] = find_peaks_manual(input_data)
 %%find local maxima in input signal
 %%input_data - smooth input signal
 %%peaks - location indices of maxima values

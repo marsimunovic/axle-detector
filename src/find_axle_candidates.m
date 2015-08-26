@@ -1,4 +1,4 @@
-function [lifted_axles] = find_axle_candidates_tmp(input_data, file_name = '')
+function [lifted_axles] = find_axle_candidates(input_data, file_name = '')
 	%%find real axes and lifted axes candidates
 
 	global DEBUG_ACTIVE #print definitions
@@ -23,7 +23,7 @@ function [lifted_axles] = find_axle_candidates_tmp(input_data, file_name = '')
 	WIDTH_PERCENTAGE = 0.5;    %min percentage of real axle width in candidates
 	MAIN_AXLE_RATIO = 1.2;     
 
-	[ra_cand, aa_cand] = find_peaks_manual_tmp(output);
+	[ra_cand, aa_cand] = find_peaks_manual(output);
 	if DEBUG_ACTIVE > 3
 		ra_min = [];
 		ra_max = [];
