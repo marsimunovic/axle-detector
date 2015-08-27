@@ -6,7 +6,7 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 	global SAVING_ON
 
 	axle_data = double([]);
-	MAX_EDGE_HEIGHT_DIFF = 10; %difference between tyre left and right edge heights
+	MAX_EDGE_HEIGHT_DIFF = 15; %difference between tyre left and right edge heights
 	S = 'g'; #draw ellipse with green color
 
 	if SAVING_ON
@@ -22,42 +22,41 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 	new_maxima_locations = [];
 	axle_candidates;
 
-	if DEBUG_ACTIVE > 5
-		#disp('printing')
-		#pause(3)
-		aa_min = [];
-		aa_max = [];
-		for cand = axle_candidates
-			aa_min = [aa_min cand.loc];
-			aa_max = [aa_max cand.lt cand.rt];
-		end
-		fig2 = figure(randi([10000 100000]))
-		plot(input_data)
-		hold on
-		plot(aa_min, input_data(aa_min), 'rx');
-		hold on
-		plot(aa_max, input_data(aa_max), 'go');
-	end
-	
 	for aa = axle_candidates
 		peakl = input_data(aa.lt);
 		peakr = input_data(aa.rt);
 		pos = aa.loc;
 
 		if peakl < peakr
-			#disp('search right')
 			while (input_data(pos) < peakl) && (pos < numel(input_data))
 				pos = pos + 1;
 			end
+			#disp('search right')
 			aa.rt = pos;
 		elseif peakr < peakl
-			#disp('search left')
 			while (input_data(pos) < peakr) && (pos >= 1) 
 				pos = pos - 1;
 			end
+			#disp('search left')
 			aa.lt = pos;
 		else
 			#do nothing
+		end
+		if DEBUG_ACTIVE > 5
+			#disp('printing')
+			#pause(3)
+			aa_min = [];
+			aa_max = [];
+			for cand = axle_candidates
+				aa_min = [aa_min cand.loc];
+				aa_max = [aa_max cand.lt cand.rt];
+			end
+			fig2 = figure(randi([10000 100000]))
+			plot(input_data)
+			hold on
+			plot(aa_min, input_data(aa_min), 'rx');
+			hold on
+			plot(aa_max, input_data(aa_max), 'go');
 		end
 
 		leftH = input_data(aa.lt);
@@ -66,6 +65,8 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 		cntrx = aa.loc;
 		min_low = input_data(cntrx);
 		ra = min([(aa.rt - cntrx) (cntrx - aa.lt)]); # axle width
+		ra2 = max([(aa.rt - cntrx) (cntrx - aa.lt)]); #bigger width, data for stat. inference
+		ax_ratio = double(ra2*100)/double(ra);
 		rb = cntry - min_low; #axle height
 		start = cntrx - ra;
 		stop = cntrx + ra;
@@ -75,8 +76,14 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
       	rel_pos = double(cntrx)*100/double(vehicle_len);
 
 		#elimination steps
-		if (input_data(cntrx) > 0 && (abs(leftH-rightH) <= MAX_EDGE_HEIGHT_DIFF))
-			if(cntry < 30) && (rel_pos > 20)
+		if (input_data(cntrx) > 0 && (abs(leftH-rightH) <= MAX_EDGE_HEIGHT_DIFF) && ra > 10 && rb > 6 && ax_ratio < 400)
+			if DEBUG_ACTIVE > 0
+				disp('First elimination')
+			end
+			if(cntry < 30) && ((rel_pos > 20) || (cntrx > 400))
+				if DEBUG_ACTIVE > 0
+					disp('Second elimination')
+				end
 				left_e = [];
 				left_loc = [];
 				right_e = [];
@@ -126,13 +133,27 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 				end
 				if err_cnt > 0
 					disp('Found empty row in axle')
+					max_err_pixels = 2*ra;
+					black_pix = im_w - sum(Xcrop(m, :))
+					if black_pix > max_err_pixels
+						#this is not noisy line and axle cannot have empty line
+						continue;
+					end
 				end
 				ellipse_area = 0.5*ra*rb*pi;
 				ratioo = double(double(area_over)/double(ellipse_area))*100;
 				#rel_error = 100.0*double(abs(area_over-ellipse_area))/...
 				#				  double(max([area_over ellipse_area]));
 				if (ratioo > 80) && (ratioo < 130)
-					axle_data = double([axle_data; [cntrx, cntry, ra, rb, min_low,...
+					if DEBUG_ACTIVE > 0
+						disp('Third elimination')
+					end
+					if (ratioo < 90) && (ax_ratio > 260)
+						##irregular shape
+						continue;
+					end
+
+					axle_data = double([axle_data; [cntrx, cntry, ra, rb, ax_ratio, min_low,...
 								 leftH, rightH, ratioo, vehicle_len]]);
 					if SAVING_ON
 						hold on
@@ -146,6 +167,10 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 					end
 				end
 			end
+#		else
+#			if DEBUG_ACTIVE > 0
+#				[input_data(cntrx), peakl, peakr, leftH, rightH, ra, ax_ratio]
+#			end
 		end
 	end
 

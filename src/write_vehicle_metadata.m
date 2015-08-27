@@ -10,6 +10,7 @@ function [xls_fptr] = write_vehicle_metadata(img_name, axle_data, xls)
 %%  cy - y coordinate of axle center
 %%	ra - horizontal tyre radius
 %%  rb - vertical tyre radius 
+%%  detected axle edge to center ratio
 %%  min_point - distance from bottom to tyre
 %%  left_edge - detected left edge height
 %%  right_edge - detected right edge height
@@ -34,7 +35,7 @@ function [xls_fptr] = write_vehicle_metadata(img_name, axle_data, xls)
 	offset = 64; %ascii value before first column
   if row == 3
     %%new file
-    col_names = {'Name', 'AxlCnt', 'CX', 'CY', 'RA', 'RB', ...
+    col_names = {'Name', 'AxlCnt', 'CX', 'CY', 'RA', 'RB', 'Aratio' ...
                 'MinPoint', 'Left', 'Right', 'Ratio', 'VehicleLen'};
     assert((numel(col_names) == (data_size + 2))); %if something is wrong
     xlRange = strcat(char(offset+1),'1',':',char(offset+numel(col_names)),'1');

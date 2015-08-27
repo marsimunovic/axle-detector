@@ -26,10 +26,11 @@ warning("off", "Octave:GraphicsMagic-Quantum-Depth");
 % output_dir - top directory for output files (reports, images, etc.)
 % output_subdir1 - directory for plots withcd  detected axles
 
-top_dir_name = '665000_images';
-#top_dir_name = '710000_images';
+#top_dir_name = '665000_images';
+top_dir_name = '730000_images';
 #top_dir_name = 'rainy_images';
 #top_dir_name = 'axle_images';
+#top_dir_name = 'missed_images';
 
 image_dir = strcat('..', filesep(), top_dir_name);
 %create output dirs and subdirs if not existing
@@ -67,7 +68,7 @@ global DEBUG_ACTIVE = 0;
 global DEBUG_LEVEL = 0;
 global DEBUG_COUNT_IMAGES = 4;
 global LOWER_PART = 70; %determines how many lower pixels of vehicle image will be used
-global MIN_AXCEPTED_LENGTH= 400; #narrower vehicles will not be examined
+global MIN_ACCEPTED_LENGTH= 400; #narrower vehicles will not be examined
 global SAVING_ON = 1;
 
  
@@ -143,7 +144,7 @@ if SAVING_ON
 	ot = system(python_command, 1);
 end
 toc();
-exit();
+#exit();
 
 %%  HOUGH TRANSFOR CODE : DEPRECATED
 %%  BLUR_LEVEL = 3; # 0 - no blur, 1 - blur up, 
