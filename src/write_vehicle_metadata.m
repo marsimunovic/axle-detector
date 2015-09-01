@@ -36,7 +36,7 @@ function [xls_fptr] = write_vehicle_metadata(img_name, axle_data, xls)
   if row == 3
     %%new file
     col_names = {'Name', 'AxlCnt', 'CX', 'CY', 'RA', 'RB', 'Aratio' ...
-                'MinPoint', 'Left', 'Right', 'Ratio', 'VehicleLen'};
+                'MinPoint', 'Left', 'Right', 'Ratio', 'VehicleLen', 'RealW1', 'RealW2'};
     assert((numel(col_names) == (data_size + 2))); %if something is wrong
     xlRange = strcat(char(offset+1),'1',':',char(offset+numel(col_names)),'1');
     xls = oct2xls(cellstr(col_names), xls, sheet,  xlRange);            

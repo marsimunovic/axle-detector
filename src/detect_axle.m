@@ -8,9 +8,9 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 	axle_data = double([]);
 	MAX_EDGE_HEIGHT_DIFF = 15; %difference between tyre left and right edge heights
 	S = 'g'; #draw ellipse with green color
-
+	fig = 1;
 	if SAVING_ON
-		fig = figure;
+		fig = figure(1);
 		set(fig, "visible", "off")
 		#disp('Plotting section')
 		plot(input_data)
@@ -24,7 +24,23 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 
 	for aa = axle_candidates
 		peakl = input_data(aa.lt);
+		better_cand = find(input_data(aa.lt+1:aa.lt+8) >= peakl);
+		if(numel(better_cand) > 0)
+			disp('Fixing left')
+			[aa.lt aa.lt + better_cand(end) peakl input_data(aa.lt + better_cand(end))]
+			aa.lt = aa.lt + better_cand(end);
+			peakl = input_data(aa.lt);
+		end
 		peakr = input_data(aa.rt);
+
+		better_cand = find(input_data(aa.rt-8:aa.rt-1) >= peakr);
+		if(numel(better_cand) > 0)
+			disp('Fixing right')
+			[aa.rt aa.rt-(9-better_cand(1)) peakr input_data(aa.rt-(9-better_cand(1)))]
+			aa.rt = aa.rt-(9-better_cand(1));
+			peakr = input_data(aa.rt);
+		end
+
 		pos = aa.loc;
 
 		if peakl < peakr
@@ -42,7 +58,7 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 		else
 			#do nothing
 		end
-		if DEBUG_ACTIVE > 5
+		if DEBUG_ACTIVE > 0
 			#disp('printing')
 			#pause(3)
 			aa_min = [];
@@ -70,6 +86,38 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 		rb = cntry - min_low; #axle height
 		start = cntrx - ra;
 		stop = cntrx + ra;
+		realW1 = 100;
+		realW2 = 100;
+
+
+		if(min_low >=8)
+			%%there is big probability this is not axle
+			%%perform additional checking
+			NUM = 2;
+		    ENDD = 6;
+		    bottom_edge = input_data(start:stop);
+		    for ptr = 1 : numel(bottom_edge) - ENDD
+		        if(sum(bottom_edge(ptr+1:ptr+NUM) == bottom_edge(ptr)) == NUM)
+		            %% found small straight line
+		        	%%check next couple of pixels
+		            found = 0;
+		            for ptr2 = ptr + NUM + 1: ptr + ENDD
+		                if bottom_edge(ptr) == bottom_edge(ptr2)
+		                    found = ptr2;
+		                end
+		            end
+		            if found
+		                bottom_edge(ptr:found) = bottom_edge(ptr)*ones(1, found-ptr+1);
+		                ptr = found-NUM;
+		            end
+		        end
+		    end
+		    input_data(start:stop) = bottom_edge;
+#		    fig2 = figure(randi([10000 100000]))
+#		    plot(input_data(start:stop), 'b')
+#		    hold on
+#			plot(bottom_edge, 'r')
+		end
 		
 		vehicle_len = numel(input_data);
 		#calculate relative position of the candidate
@@ -80,7 +128,7 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 			if DEBUG_ACTIVE > 0
 				disp('First elimination')
 			end
-			if(cntry < 30) && ((rel_pos > 20) || (cntrx > 400))
+			if(cntry < 30) && ((rel_pos > 20) || (cntrx > 350))
 				if DEBUG_ACTIVE > 0
 					disp('Second elimination')
 				end
@@ -91,8 +139,8 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
      			area_over = 0;
      			if (DEBUG_ACTIVE > 0)
      				disp('Calculating area')
-     				#fig2 = figure(randi([10000 100000]))
-     				#imshow(Xcrop(im_h-cntry:im_h-min_low, start-1:stop+1))
+     				fig2 = figure(randi([10000 100000]))
+     				imshow(Xcrop(im_h-cntry:im_h-min_low, start-1:stop+1))
      			end
      			err_cnt = 0;
 				for m = im_h-min_low:-1:im_h-cntry
@@ -130,6 +178,14 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 					end
 					#[area_part2-area_part1]
 					area_over = area_over + (area_part2 - area_part1 + 1);
+					if (m == im_h-cntry)
+						sum1 = sum(Xcrop(m, area_part1 : area_part2) == 0);
+						realW1 = [sum1*50/ra];
+					end
+					if (m == im_h - cntry + 1)
+						sum1 = sum(Xcrop(m, area_part1 : area_part2) == 0);
+						realW2 = [sum1*50/ra];
+					end
 				end
 				if err_cnt > 0
 					disp('Found empty row in axle')
@@ -152,9 +208,10 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 						##irregular shape
 						continue;
 					end
+					
 
 					axle_data = double([axle_data; [cntrx, cntry, ra, rb, ax_ratio, min_low,...
-								 leftH, rightH, ratioo, vehicle_len]]);
+								 leftH, rightH, ratioo, vehicle_len, realW1, realW2]]);
 					if SAVING_ON
 						hold on
 						drawEllipse(cntrx, cntry, ra, rb, S);

@@ -70,5 +70,55 @@ function [ bottom_edge ] = detect_edge( input_image )
     %%disp('to')
     %%#m
     %%bottom_edge = shrinked_edge;
+#    [output, offset] = han_filter(bottom_edge);
+#    [output2, offset2] = hamming_filter(bottom_edge);
+#    figure
+#    plot(bottom_edge)
+#    hold on
+#    output = [output(offset:end) zeros(1, offset)];
+#    plot(output, 'r')
+#    output2 = [output2(offset2:end) zeros(1, offset2)];
+#    plot(output2, 'g')
 
+#    NUM = 4;
+#    ENDD = 11;
+#    for n = 1 : numel(bottom_edge) - ENDD
+#        if(sum(bottom_edge(n+1:n+NUM) == bottom_edge(n)) == NUM)
+#        #if (bottom_edge(n) == bottom_edge(n+1)) && (bottom_edge(n) == bottom_edge(n+2))
+#        %% found small straight line
+#        %%check next couple of pixels
+#            found = 0;
+#            for nn = n + NUM + 1: n + ENDD
+#                if bottom_edge(n) == bottom_edge(nn)
+#                    found = nn;
+#                end
+#            end
+#            if found
+#                bottom_edge(n:found) = bottom_edge(n)*ones(1, found-n+1);
+#                n = found-NUM;
+#            end
+#        end
+#    end
+#
+#
+#    for n = numel(bottom_edge) : -1: ENDD+1
+#        #if(numel(find (bottom_edge(n-NUM:n-1) == bottom_edge(n))) == NUM)
+#        if (bottom_edge(n) == bottom_edge(n-1)) && (bottom_edge(n) == bottom_edge(n-2))
+#        %% found small straight line
+#        %%check next couple of pixels
+#            found = 0;
+#            for nn = n - NUM - 1 : -1: n - ENDD
+#                if bottom_edge(n) == bottom_edge(nn)
+#                    found = nn;
+#                end
+#            end
+#            if found
+#                bottom_edge(found:n) = bottom_edge(n)*ones(1, n-found+1);
+#                n = found-NUM;
+#            end
+#        end
+#    end
+
+#    figure
+#    plot(bottom_edge)
 end
