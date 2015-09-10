@@ -70,15 +70,25 @@ function [ bottom_edge ] = detect_edge( input_image )
     %%disp('to')
     %%#m
     %%bottom_edge = shrinked_edge;
+    mov_av = zeros(1, numel(bottom_edge));
+    for m = 11 : numel(bottom_edge)
+        mov_av(m) = sum(bottom_edge(m-10:m))/11;
+    end
+
 #    [output, offset] = han_filter(bottom_edge);
-#    [output2, offset2] = hamming_filter(bottom_edge);
+#    #[output2, offset2] = hamming_filter(bottom_edge);
 #    figure
 #    plot(bottom_edge)
 #    hold on
 #    output = [output(offset:end) zeros(1, offset)];
 #    plot(output, 'r')
-#    output2 = [output2(offset2:end) zeros(1, offset2)];
-#    plot(output2, 'g')
+#    hold on
+#    plot(mov_av, 'g')
+#    #output2 = [output2(offset2:end) zeros(1, offset2)];
+#    #plot(output2, 'g')
+
+
+
 
 #    NUM = 4;
 #    ENDD = 11;
@@ -121,4 +131,5 @@ function [ bottom_edge ] = detect_edge( input_image )
 
 #    figure
 #    plot(bottom_edge)
+
 end

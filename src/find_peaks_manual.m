@@ -33,7 +33,7 @@ function [real_axle_candidates, aux_axle_candidates] = find_peaks_manual(input_d
 
 	#find minima
 	for n = 2:M
-		[M,I] = min(input_data(peaks(n-1):peaks(n)));
+		[M,I] = min(input_data(peaks(n-1)+1:peaks(n)));
 		loc = I + peaks(n-1);
 		#if more than one minimum
 		offset = 1;
@@ -54,6 +54,7 @@ function [real_axle_candidates, aux_axle_candidates] = find_peaks_manual(input_d
 		new_candidate.lt = peaks(n-1);
 		new_candidate.rt = peaks(n);
 		new_candidate.loc = loc;
+		#[peaks(n-1) loc peaks(n)]#
 
 		#hold on
 		#ind123 = [new_candidate.lt loc new_candidate.rt];

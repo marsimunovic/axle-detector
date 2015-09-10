@@ -1,12 +1,14 @@
-function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
+function [axle_data] = detect_axle(Xcrop, CropCount, input_data, axle_candidates, to_file)
 %%perform detection on selected candidates
 %%draw detections in gif file with bottom contour
 
 	global DEBUG_ACTIVE
 	global SAVING_ON
 
+
 	axle_data = double([]);
-	MAX_EDGE_HEIGHT_DIFF = 15; %difference between tyre left and right edge heights
+	MIN_AXLE_HEIGHT = 7;
+	MAX_EDGE_HEIGHT_DIFF = 20; %difference between tyre left and right edge heights
 	S = 'g'; #draw ellipse with green color
 	fig = 1;
 	if SAVING_ON
@@ -23,42 +25,92 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 	axle_candidates;
 
 	for aa = axle_candidates
-		peakl = input_data(aa.lt);
-		better_cand = find(input_data(aa.lt+1:aa.lt+8) >= peakl);
-		if(numel(better_cand) > 0)
-			disp('Fixing left')
-			[aa.lt aa.lt + better_cand(end) peakl input_data(aa.lt + better_cand(end))]
-			aa.lt = aa.lt + better_cand(end);
-			peakl = input_data(aa.lt);
+		%%centering minima
+		min_eq = sum(input_data(aa.loc-5:aa.loc+5) == input_data(aa.loc));
+		if (min_eq > 6)
+			flat_min = find(input_data(aa.lt+1:aa.rt-1) == input_data(aa.loc));
+			new_flat_min = (numel(flat_min) + 1) / 2;
+			aa.loc = aa.lt + flat_min(int16(new_flat_min));
 		end
+
+		peakl = input_data(aa.lt);
 		peakr = input_data(aa.rt);
 
-		better_cand = find(input_data(aa.rt-8:aa.rt-1) >= peakr);
-		if(numel(better_cand) > 0)
-			disp('Fixing right')
-			[aa.rt aa.rt-(9-better_cand(1)) peakr input_data(aa.rt-(9-better_cand(1)))]
-			aa.rt = aa.rt-(9-better_cand(1));
-			peakr = input_data(aa.rt);
-		end
-
-		pos = aa.loc;
-
-		if peakl < peakr
-			while (input_data(pos) < peakl) && (pos < numel(input_data))
-				pos = pos + 1;
+		#disp('equal')
+		leftw = aa.loc - aa.lt;
+		rightw = aa.rt - aa.loc;
+		req_min = input_data(aa.loc) + MIN_AXLE_HEIGHT;
+		if (leftw > rightw)
+			#disp('left is farther')
+			cntr = 0;
+			prev = input_data(aa.loc-rightw + 2);
+			ind2 = 0;
+			ind3 = 0;
+			for lw = aa.loc - rightw + 1: -1: aa.lt
+				if(input_data(lw) == prev)
+					cntr = cntr + 1;
+				else
+					cntr = 0;
+				end
+				prev = input_data(lw);
+				if (ind2 == 0) && (abs(input_data(lw)-peakl) == 2)
+					ind2 = lw;
+				end
+				if (ind3 == 0) && (abs(input_data(lw)-peakl) == 3)
+					ind3 = lw;
+				end
+				if (input_data(lw) >= peakl) || ((cntr >= 3) && (input_data(lw) > req_min)) 
+					if (aa.lt == lw)
+						if (ind3 != 0) && (ind3 - lw > 10) && (input_data(ind3) > req_min)
+							lw = ind3;
+						end
+						if (ind2 != 0) && (ind2 - lw > 5) && (input_data(ind2) > req_min)
+							lw = ind2;
+							disp('Fixing 1')
+						end
+					end
+					aa.lt = lw;
+					break;
+				end
 			end
-			#disp('search right')
-			aa.rt = pos;
-		elseif peakr < peakl
-			while (input_data(pos) < peakr) && (pos >= 1) 
-				pos = pos - 1;
+
+			while(input_data(aa.lt) <= input_data(aa.rt - 1))
+				aa.rt = aa.rt - 1;
 			end
-			#disp('search left')
-			aa.lt = pos;
+		elseif (rightw > leftw)
+			#disp('right is farther')
+			cntr = 0;
+			prev = input_data(aa.loc+leftw - 2);
+			ind2 = 0;
+			for rw = aa.loc + leftw - 1: aa.rt
+				if(input_data(rw) == prev)
+					cntr = cntr + 1;
+				else
+					cntr = 0;
+				end
+				prev = input_data(rw);
+				if (ind2 == 0) && (abs(input_data(rw)-peakr) == 2)
+					ind2 = rw;
+				end
+				if (input_data(rw) >= peakr) || ((cntr >= 3) && (input_data(rw) > req_min))
+					if (aa.rt == rw)
+						if (ind2 != 0) && (rw-ind2 > 5) && (input_data(ind2) > req_min)
+							rw = ind2;
+							disp('Fixing 2')
+						end
+					end
+					aa.rt = rw;
+					break;
+				end
+			end
+			while(input_data(aa.lt + 1) >= input_data(aa.rt))
+				aa.lt = aa.lt + 1;
+			end
 		else
-			#do nothing
+		#do nothing
 		end
-		if DEBUG_ACTIVE > 0
+
+		if DEBUG_ACTIVE > 3
 			#disp('printing')
 			#pause(3)
 			aa_min = [];
@@ -67,7 +119,7 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 				aa_min = [aa_min cand.loc];
 				aa_max = [aa_max cand.lt cand.rt];
 			end
-			fig2 = figure(randi([10000 100000]))
+			fig2 = figure(randi([10000 100000]));
 			plot(input_data)
 			hold on
 			plot(aa_min, input_data(aa_min), 'rx');
@@ -90,45 +142,18 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 		realW2 = 100;
 
 
-		if(min_low >=8)
-			%%there is big probability this is not axle
-			%%perform additional checking
-			NUM = 2;
-		    ENDD = 6;
-		    bottom_edge = input_data(start:stop);
-		    for ptr = 1 : numel(bottom_edge) - ENDD
-		        if(sum(bottom_edge(ptr+1:ptr+NUM) == bottom_edge(ptr)) == NUM)
-		            %% found small straight line
-		        	%%check next couple of pixels
-		            found = 0;
-		            for ptr2 = ptr + NUM + 1: ptr + ENDD
-		                if bottom_edge(ptr) == bottom_edge(ptr2)
-		                    found = ptr2;
-		                end
-		            end
-		            if found
-		                bottom_edge(ptr:found) = bottom_edge(ptr)*ones(1, found-ptr+1);
-		                ptr = found-NUM;
-		            end
-		        end
-		    end
-		    input_data(start:stop) = bottom_edge;
-#		    fig2 = figure(randi([10000 100000]))
-#		    plot(input_data(start:stop), 'b')
-#		    hold on
-#			plot(bottom_edge, 'r')
-		end
-		
+	
 		vehicle_len = numel(input_data);
 		#calculate relative position of the candidate
       	rel_pos = double(cntrx)*100/double(vehicle_len);
-
+     
 		#elimination steps
-		if (input_data(cntrx) > 0 && (abs(leftH-rightH) <= MAX_EDGE_HEIGHT_DIFF) && ra > 10 && rb > 6 && ax_ratio < 400)
+		disp('Test')
+		if ((input_data(cntrx) > 0) (abs(leftH-rightH) <= MAX_EDGE_HEIGHT_DIFF) && ra > 10 && rb >= MIN_AXLE_HEIGHT && ax_ratio < 200)
 			if DEBUG_ACTIVE > 0
 				disp('First elimination')
 			end
-			if(cntry < 30) && ((rel_pos > 20) || (cntrx > 350))
+			if(cntry < 34) && ((rel_pos > 20) || (cntrx > 350))
 				if DEBUG_ACTIVE > 0
 					disp('Second elimination')
 				end
@@ -137,7 +162,7 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 				right_e = [];
 				right_loc = [];
      			area_over = 0;
-     			if (DEBUG_ACTIVE > 0)
+     			if (DEBUG_ACTIVE > 3)
      				disp('Calculating area')
      				fig2 = figure(randi([10000 100000]))
      				imshow(Xcrop(im_h-cntry:im_h-min_low, start-1:stop+1))
@@ -196,23 +221,22 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 						continue;
 					end
 				end
-				ellipse_area = 0.5*ra*rb*pi;
+				#rb
+				ellipse_area = 0.5*(ra-0.5)*rb*pi;
 				ratioo = double(double(area_over)/double(ellipse_area))*100;
 				#rel_error = 100.0*double(abs(area_over-ellipse_area))/...
 				#				  double(max([area_over ellipse_area]));
-				if (ratioo > 80) && (ratioo < 130)
+				if (ratioo >= 85) && (ratioo <= 130) && (realW1 > 85) && (realW2 > 85) && ((min_low + CropCount) < 10)
 					if DEBUG_ACTIVE > 0
 						disp('Third elimination')
 					end
-					if (ratioo < 90) && (ax_ratio > 260)
-						##irregular shape
-						continue;
-					end
 					
 
-					axle_data = double([axle_data; [cntrx, cntry, ra, rb, ax_ratio, min_low,...
-								 leftH, rightH, ratioo, vehicle_len, realW1, realW2]]);
+					axle_data = double([axle_data; [cntrx, cntry + CropCount, ra, rb, ax_ratio, min_low + CropCount,...
+								 leftH + CropCount, rightH + CropCount, ratioo, vehicle_len, realW1, realW2]]);
 					if SAVING_ON
+						hold on
+						grid on
 						hold on
 						drawEllipse(cntrx, cntry, ra, rb, S);
 						hold on
@@ -222,19 +246,23 @@ function [axle_data] = detect_axle(Xcrop, input_data, axle_candidates, to_file)
 						minima_locations = [minima_locations aa.loc];
 						new_maxima_locations = [new_maxima_locations aa.lt aa.rt];
 					end
+				else
 				end
+			else
+				disp('Relative position!')
+				[rel_pos cntrx cntry]
 			end
 #		else
 #			if DEBUG_ACTIVE > 0
-#				[input_data(cntrx), peakl, peakr, leftH, rightH, ra, ax_ratio]
+#				[input_data(cntrx), leftH, rightH, ra, ax_ratio]
 #			end
 		end
 	end
 
 	if SAVING_ON
 		%% plot detected bottoms and edges of tyres on image
-		hold on
-		plot(minima_locations, input_data(minima_locations), 'ro');
+		#hold on
+		#plot(minima_locations, input_data(minima_locations), 'ro');
 		hold on
 		plot(new_maxima_locations, input_data(new_maxima_locations), 'go');
 		printf("Saving %s\n", to_file );

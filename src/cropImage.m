@@ -1,4 +1,4 @@
-function [Xcrop] = cropImage(image_matrix_binary)
+function [Xcrop, CropCount] = cropImage(image_matrix_binary)
 %% crops image in following way:
 %% first column with black pixel becomes first column of an image
 %% last column with black pixel becomes last column of an image
@@ -8,7 +8,10 @@ function [Xcrop] = cropImage(image_matrix_binary)
 %% Xcrop - cropped image (remove before and after vehicle and pixels over LOWER_PART)
 
 	global LOWER_PART; %% determines how many lower pixels of an image are preserved
+	
 	MIN_PIX_REPETITION = 30; %%improves vehicle detection filtering sporadic pixels
+
+	CropCount = 0;
 
 	%% first split image
 	[height, width] = size(image_matrix_binary);
@@ -50,6 +53,7 @@ function [Xcrop] = cropImage(image_matrix_binary)
 	N = 3;
 	crop = 1:height-LOWER_PART-N;
 	add = [];
+	
 	for m = height-N+1:height
 		freq = 0;
 		for n = firstCol+1:lastCol
@@ -61,6 +65,7 @@ function [Xcrop] = cropImage(image_matrix_binary)
 			freq
 			rw = height-m + 1
 			disp('WARNING: Increased noise level in lower rows')
+			CropCount = CropCount + 1;
 		else
 			add = [add (LOWER_PART - (height-m))];
 		end

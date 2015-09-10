@@ -1,9 +1,9 @@
-function [lifted_axles] = find_axle_candidates(input_data, file_name = '')
+function [lifted_axles, compare_axles] = find_axle_candidates(input_data, file_name = '')
 	%%find real axes and lifted axes candidates
 
 	global DEBUG_ACTIVE #print definitions
 	global MIN_ACCEPTED_LENGTH
-
+	compare_axles = [];
 	lifted_axles = [];
 
 	if(numel(input_data) < MIN_ACCEPTED_LENGTH)
@@ -31,24 +31,68 @@ function [lifted_axles] = find_axle_candidates(input_data, file_name = '')
 			ra_min = [ra_min cand.loc];
 			ra_max = [ra_max cand.lt cand.rt];
 		end
+		ra_min = ra_min - offset;
+		ra_max = ra_max - offset;
 		aa_min = [];
 		aa_max = [];
 		for cand = aa_cand
 			aa_min = [aa_min cand.loc];
 			aa_max = [aa_max cand.lt cand.rt];
 		end
-		figure
-		plot(output)
-		hold on
-		plot(aa_min, output(aa_min), 'rx');
-		hold on
-		plot(aa_max, output(aa_max), 'go');
-		hold on
-		plot(ra_min, output(ra_min), 'rx');
-		hold on
-		plot(ra_max, output(ra_max), 'go');
+		
+
+#		figure
+#		plot(output)
+#		hold on
+#		plot(aa_min, output(aa_min), 'rx');
+#		hold on
+#		plot(aa_max, output(aa_max), 'go');
+#		hold on
+#		plot(ra_min, output(ra_min), 'rx');
+#		hold on
+#		plot(ra_max, output(ra_max), 'go');
 	end
 
+	[ra_cand, aa_cand] = improve_axle_dim(input_data, output, offset, ra_cand, aa_cand);
+#	#ra_cand_ = ra_cand;
+#	#aa_cand_ = aa_cand;
+#		ra_min = [];
+#		ra_max = [];
+#		offs = offset;
+#		for cand = ra_cand_
+#			ra_min = [ra_min (cand.loc-offs)];
+#			ra_max = [ra_max (cand.lt-offs) (cand.rt-offs)];
+#		end
+#		aa_min = [];
+#		aa_max = [];
+#		for cand = aa_cand_
+#			aa_min = [aa_min (cand.loc-offs)];
+#			aa_max = [aa_max (cand.lt-offs) (cand.rt-offs)];
+#		end
+#
+#
+#		figure
+#		plot(input_data)
+#		hold on
+#		plot(aa_min, input_data(aa_min), 'rx');
+#		hold on
+#		plot(aa_max, input_data(aa_max), 'go');
+#		hold on
+#		plot(ra_min, input_data(ra_min), 'rx');
+#		hold on
+#		plot(ra_max, input_data(ra_max), 'go');
+
+#		figure
+#		plot(output)
+#		hold on
+#		plot(aa_min, output(aa_min), 'rx');
+#		hold on
+#		plot(aa_max, output(aa_max), 'go');
+#		hold on
+#		plot(ra_min, output(ra_min), 'rx');
+#		hold on
+#		plot(ra_max, output(ra_max), 'go');
+#	pause(60)
 
 	#
 	#if necessary, perform small correction on candidate left and right edge locations
@@ -64,39 +108,16 @@ function [lifted_axles] = find_axle_candidates(input_data, file_name = '')
 	end
 	raxle_halfw = zeros(1, Nra); #half widths in real axle candidates
 	for n = 1 : Nra
-		rt = ra_cand(n).rt - offset;
-		lt = ra_cand(n).lt - offset;
-		loc = ra_cand(n).loc - offset;
-		while (lt < loc) && (input_data(lt) == input_data(lt+1))
-			lt = lt+1;
-		end
-		ra_cand(n).lt = lt+offset;
-		while (rt > loc) && (input_data(rt) == input_data(rt-1))
-			rt = rt-1;
-		end
-		ra_cand(n).rt = rt+offset;
 		raxle_halfw(n) = min(ra_cand(n).loc - ra_cand(n).lt,...
 						 ra_cand(n).rt - ra_cand(n).loc);
 	end
 	#find two widest candidates
 	[firstw, ind1] = max(raxle_halfw);
 	raxle_halfw(ind1) = 0;
-	secondw = max(raxle_halfw);
+	[secondw, ind2] = max(raxle_halfw);
 
-	Naa = numel(aa_cand);
-	for n = 1 : Naa
-		lt = aa_cand(n).lt - offset;
-		rt = aa_cand(n).rt - offset;
-		loc = aa_cand(n).loc - offset;
-		while (lt < loc) && (input_data(lt) == input_data(lt+1))
-			lt = lt+1;
-		end
-		aa_cand(n).lt = lt+offset;
-		while (rt > loc) && (input_data(rt) == input_data(rt-1))
-			rt = rt-1;
-		end
-		aa_cand(n).rt = rt+offset;
-	end
+	compare_axles = [ra_cand(ind1) ra_cand(ind2)];
+
 
 	for n = 1:numel(aa_cand)
 		aa = aa_cand(n);
