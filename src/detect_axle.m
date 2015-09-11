@@ -141,6 +141,8 @@ function [axle_data] = detect_axle(Xcrop, CropCount, input_data, axle_candidates
 		realW1 = 100;
 		realW2 = 100;
 
+		left_set = [];
+     	right_set = [];
 
 	
 		vehicle_len = numel(input_data);
@@ -168,6 +170,7 @@ function [axle_data] = detect_axle(Xcrop, CropCount, input_data, axle_candidates
      				imshow(Xcrop(im_h-cntry:im_h-min_low, start-1:stop+1))
      			end
      			err_cnt = 0;
+     			
 				for m = im_h-min_low:-1:im_h-cntry
 					empty = 0;
 					area_part1 = cntrx;
@@ -202,6 +205,12 @@ function [axle_data] = detect_axle(Xcrop, CropCount, input_data, axle_candidates
 						err_cnt = err_cnt + 1;
 					end
 					#[area_part2-area_part1]
+					if (isempty(find(left_set == area_part1)))
+						left_set = [left_set area_part1];
+					end
+					if (isempty(find(right_set == area_part2)))
+						right_set = [right_set area_part2];
+					end
 					area_over = area_over + (area_part2 - area_part1 + 1);
 					if (m == im_h-cntry)
 						sum1 = sum(Xcrop(m, area_part1 : area_part2) == 0);
@@ -226,14 +235,51 @@ function [axle_data] = detect_axle(Xcrop, CropCount, input_data, axle_candidates
 				ratioo = double(double(area_over)/double(ellipse_area))*100;
 				#rel_error = 100.0*double(abs(area_over-ellipse_area))/...
 				#				  double(max([area_over ellipse_area]));
-				if (ratioo >= 85) && (ratioo <= 130) && (realW1 > 85) && (realW2 > 85) && ((min_low + CropCount) < 10)
+				RS = numel(right_set);
+				LS = numel(left_set);
+				side_var = double(min([RS LS]));
+				if ((min_low + CropCount) > 8)
+					if (100.0*double(side_var)/double(rb)) < 50
+						disp('Square angle')
+						(100.0*double(side_var)/double(rb))
+						continue;
+					end
+				else
+#					disp('8 or smaller')
+#					100.0*double(side_var)/double(rb)
+#					if (100.0*double(side_var)/double(rb)) < 40
+#						sf = [im_h-min_low:-1:im_h-cntry]; %%search field
+#						el_cnt = 0;
+#						if (RS < LS)
+#							disp('check dynamic right')
+#							%%check dynamic
+#							for el = sf
+#								if (sum(find(input_data(stop+1:-1:start-1) == el)) > 0)
+#									el_cnt = el_cnt + 1
+#								end
+#							end
+#
+#						elseif (LS < RS)
+#							disp('check dynamic left')
+#							for el = sf
+#								if (sum(find(input_data(start-1:stop+1) == el)) > 0)
+#									el_cnt = el_cnt + 1
+#								end
+#							end
+#						else
+#							disp('RS == LS')						
+#						end
+#					end
+				end
+				if (ratioo >= 85) && (ratioo <= 130) && (realW1 > 85) && (realW2 > 85)
 					if DEBUG_ACTIVE > 0
 						disp('Third elimination')
 					end
 					
+					
 
 					axle_data = double([axle_data; [cntrx, cntry + CropCount, ra, rb, ax_ratio, min_low + CropCount,...
-								 leftH + CropCount, rightH + CropCount, ratioo, vehicle_len, realW1, realW2]]);
+								 leftH + CropCount, rightH + CropCount, ratioo, vehicle_len, realW1, realW2, RS, LS]]);
 					if SAVING_ON
 						hold on
 						grid on

@@ -37,8 +37,8 @@ warning("off", "Octave:GraphicsMagic-Quantum-Depth");
 #top_dir_name = '805000_images';
 #top_dir_name = '810000_images';
 #top_dir_name = 'rainy_images';
-top_dir_name = 'axle_images';
-#top_dir_name = 'missed_images';
+#top_dir_name = 'axle_images';
+top_dir_name = 'missed_images';
 #top_dir_name = 'error_images';
 
 
