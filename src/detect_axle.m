@@ -151,7 +151,7 @@ function [axle_data] = detect_axle(Xcrop, CropCount, input_data, axle_candidates
      
 		#elimination steps
 		disp('Test')
-		if ((input_data(cntrx) > 0) (abs(leftH-rightH) <= MAX_EDGE_HEIGHT_DIFF) && ra > 10 && rb >= MIN_AXLE_HEIGHT && ax_ratio < 200)
+		if ((input_data(cntrx) > 0) && (abs(leftH-rightH) <= MAX_EDGE_HEIGHT_DIFF) && ra > 10 && rb >= MIN_AXLE_HEIGHT && ax_ratio < 200)
 			if DEBUG_ACTIVE > 0
 				disp('First elimination')
 			end

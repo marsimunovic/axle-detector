@@ -17,7 +17,7 @@ function [lifted_axles, compare_axles] = find_axle_candidates(input_data, file_n
 	#some constants used in candidate elimination process
 	MIN_TYRE_WIDTH = 20;       %min tyre width in pixels
 	MAX_PIXEL_VARATION = 3;    %maximum pixel variation between two neighbor minima
-	MAX_LIFTED_HEIGHT = 10;    %lowest point of lifted tyre in pixels
+	MAX_LIFTED_HEIGHT = 15;    %lowest point of lifted tyre in pixels
 	MIN_TYRE_RADIUS = 5;       %min lifted tyre radius 	
 	MAX_EDGE_HEIGHT_RATIO = 4; %ratio between tyre left and right edge heights
 	WIDTH_PERCENTAGE = 0.5;    %min percentage of real axle width in candidates
@@ -164,19 +164,24 @@ function [lifted_axles, compare_axles] = find_axle_candidates(input_data, file_n
 		half_radius = min(ind_min - indl, indr - ind_min);
 		checker = 0;
 		axle_ratio = double(1.0*firstw)./double(secondw);
+		width_pct = WIDTH_PERCENTAGE;
+		if(output(ind_min) > 10)
+			width_pct = 0.66;
+		end
+
 		if axle_ratio >= MAIN_AXLE_RATIO
 			#disp('Big difference between two low axles')
 			#first check smaller
 			greater = max(half_radius, secondw);
 			smaller = min(half_radius, secondw);
-			if smaller > greater*WIDTH_PERCENTAGE				
+			if smaller > greater*width_pct				
 				checker = checker + 1;
 			end
 		end
 		#check with bigger
 		greater = max(half_radius, firstw);
 		smaller = min(half_radius, firstw);
-		if smaller > greater*WIDTH_PERCENTAGE
+		if smaller > greater*width_pct
 			checker = checker + 1;
 		end
 		if checker == 0
