@@ -54,6 +54,7 @@ function [lifted_axles, compare_axles] = find_axle_candidates(input_data, file_n
 	end
 
 	[ra_cand, aa_cand] = improve_axle_dim(input_data, output, offset, ra_cand, aa_cand);
+
 #	#ra_cand_ = ra_cand;
 #	#aa_cand_ = aa_cand;
 #		ra_min = [];

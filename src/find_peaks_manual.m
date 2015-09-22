@@ -27,6 +27,7 @@ function [real_axle_candidates, aux_axle_candidates] = find_peaks_manual(input_d
 		end
 		n = n + 1;
 	end
+
 	M = numel(peaks);
 	#figure
 	#plot(input_data)
@@ -37,8 +38,10 @@ function [real_axle_candidates, aux_axle_candidates] = find_peaks_manual(input_d
 		loc = I + peaks(n-1);
 		#if more than one minimum
 		offset = 1;
+		#input_data(loc:loc+5);
 		while(loc+offset < peaks(n))
 			if(input_data(loc) == input_data(loc+offset))
+				#[input_data(loc) input_data(loc+offset)]
 				offset = offset + 1;
 			else
 				break;
@@ -88,5 +91,5 @@ function [real_axle_candidates, aux_axle_candidates] = find_peaks_manual(input_d
 		end
 	end
 
-
+						
 end
