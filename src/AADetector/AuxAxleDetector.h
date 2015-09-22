@@ -23,8 +23,7 @@ public:
 	AuxAxleDetector();
     ~AuxAxleDetector();
     void LoadProfileDetails(std::string const &imageName);
-	Uint8 CountAuxiliaryAxles(Array<Uint8>& image);
-	Uint32 NumAuxAxles();
+    Uint32 CountAuxAxles();
 //proprietary members
 private:
 	//Axle Canidate Coordinates
@@ -40,21 +39,21 @@ private:
 	typedef std::vector<AxleCandidate> AxleCandidates;
 //inner methods
 private:
-    std::vector<Uint8> CropImage(Array<Uint8>& image);
-	void DetectEdge(Array<Uint8>& image);
-	void FindPeaksManual(std::vector<float>& filteredEdge, AxleCandidates& ra, AxleCandidates& aa);
+    std::vector<Uint8> CropImage();
+    bool DetectEdge();
+    void FindPeakCoordinates(AxleCandidates& ra, AxleCandidates& aa);
 	void ImproveAxleCandidates(Uint16 offset, AxleCandidates& aCand);
 	void ImproveRawAxleCandidates(AxleCandidates& aCand);
 	void FindAxleCandidates(AxleCandidates& auxCandidates);
-	Uint32 DetectAxles(Array<Uint8>& image, AxleCandidates& aCand);
+    Uint32 DetectAxles(AxleCandidates& aCand, std::vector<Uint8> cropInfo);
 
 //members
 private:
 	Uint8* m_vehEdge;
 	float* m_filteredEdge;
-    Uint8* m_imageBin;
     Array<Uint8> m_image;
 	Uint32 m_vehLen;
+    std::vector<Uint16> m_emptySegments;
 
 };
 

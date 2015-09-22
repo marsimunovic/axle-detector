@@ -8,188 +8,271 @@
 #include <set>
 #include <iostream>
 
+Uint16 const  ARR_SIZE = 8192;
 Uint8 const  NOISY_ROWS = 3;
-Uint8 const  MIN_PIX_REPETITION = 30;
+Uint8 const  MIN_PIX_REPETITION = 40;
 Uint8 const  EDGE_DIFF = 5; //filtering treshold for edge detection
 float const  LOCAL_PI = 3.14159265f;
 
+/**
+ * @brief AuxAxleDetector::LoadProfileDetails - load image to appropriate data structure
+ * @param imageName - file path to image
+ *
+ * This is QT specific function used for loading test profiles to program
+ * In real program image class that owns AuxAxleDetector will supply binary image
+ */
 void AuxAxleDetector::LoadProfileDetails(std::string const &imageName)
 {
     QImage* image = new QImage();
     QImageReader* reader = new QImageReader(imageName.c_str());
     reader->read(image);
 
-    //std::ofstream myfile ("example3.txt");
+//    std::ofstream myfile ("example3.txt");
+    if(image && reader)
+    {
+        std::vector<Uint16>().swap(m_emptySegments);
+        m_image.Allocate(image->height(), image->width());
 
-    m_imageBin = new Uint8[image->byteCount()/4];
-
-    //if (myfile.is_open())
-    //{
-        for(int i = 0; i < image->height(); ++i)
-        {
-            unsigned char *cpy = (unsigned char*) image->scanLine(i);
-            for(int j = 0; j < image->width(); ++j)
+        //if (myfile.is_open())
+        //{
+            for(int i = 0; i < image->height(); ++i)
             {
-                m_imageBin[i*image->height()+j] = (cpy[j*4])? '1': '0';
-                //myfile << ((cpy[j*4])? '1': '0');
+                unsigned char *cpy = (unsigned char*) image->scanLine(i);
+                for(int j = 0; j < image->width(); ++j)
+                {
+                    m_image(i,j) = (cpy[j*4])? 1: 0;
+                    //std::cout << static_cast<int>(m_imageBin[i*image->width()+j]) << std::endl;
+                    //myfile << ((cpy[j*4])? '1': '0');
+                }
+          //      myfile << '\n';
             }
-            //myfile << '\n';
-        }
-    m_image.AssignAllocatedArray(m_imageBin, image->height(), image->width());
-    delete[] m_imageBin;
+    }
+       // m_image.AssignAllocatedArray(m_imageBin, image->height(), image->width());
     //}
     //myfile.flush();
     //myfile.close();
+    delete image;
+    delete reader;
 
 }
 
-
-Uint8 AuxAxleDetector::CountAuxiliaryAxles(Array<Uint8>& image)
+/**
+ * @brief AuxAxleDetector::CountAuxAxles - runs processing code on image
+ * @return - number of auxiliary axles found in vehicle profile
+ */
+Uint32 AuxAxleDetector::CountAuxAxles()
 {
-    return 0;
+    std::vector<Uint8> cropInfo = CropImage();
+    Uint32 axleCount = 0;
+    if(DetectEdge())
+    {
+        AxleCandidates auxCandidates;
+        FindAxleCandidates(auxCandidates);
+        axleCount = DetectAxles(auxCandidates, cropInfo);
+    }
+    return axleCount;
 }
 
-Uint32 AuxAxleDetector::NumAuxAxles()
+/**
+ * @brief AuxAxleDetector::CropImage - crops image to appropriate dimensions
+ * @return - information about cropped rows
+ *
+ * Finds start and end of the vehicle and cuts only fixed lower part of an image
+ * in order to decrease processing time
+ * NOTE: Lower three rows (especially the lowest) can have increased noise causing
+ * over- and underdetecting of lifted axle candidates. If noise is above some fixed
+ * treshold whole row is erased and is no longer used in axle detection process
+ */
+std::vector<Uint8> AuxAxleDetector::CropImage()
 {
-    return 0;
-}
-
-std::vector<Uint8> AuxAxleDetector::CropImage(Array<Uint8> &image)
-{
-    Uint16 height = image.Rows();
-    Uint16 width  = image.Cols();
+    Uint16 height = m_image.Rows();
+    Uint16 width  = m_image.Cols();
     Uint16 top, firstCol, lastCol;
 
-    //split image
+    //take only lower part of the vehicle for axle detection
     if(height > LOWER_PART)
         top = height-LOWER_PART;
     else
         top = height;
 
-    //find front and back side of the vehicle
+    //find front side of the vehicle
     firstCol = 0;
     Uint16 countFront = 0;
 
     for(int j = 0; j < width; ++j)
     {
         Uint16 sum = 0;
-        for(int i = top; j < height; ++i)
-            sum += (!image(i,j));
+        for(int i = top; i < height; ++i)
+            sum += (m_image(i,j) == 0);
         if (sum > 5)
             ++countFront;
         else
             countFront = 0;
         if (countFront > MIN_PIX_REPETITION)
+        {
             firstCol = j - MIN_PIX_REPETITION;
+            break;
+        }
     }
-
+    //find back side of the vehicle
     lastCol = firstCol;
     Uint16 countBack = 0;
     for(int j = width-1; j > firstCol; --j)
     {
         Uint16 sum = 0;
-        for(int i = top; j < height; ++i)
-            sum += (!image(i,j));
+        for(int i = top; i < height; ++i)
+            sum += (!m_image(i,j));
         if (sum > 5)
             ++countBack;
         else
             countBack = 0;
         if (countBack > MIN_PIX_REPETITION)
-            lastCol = j + MIN_PIX_REPETITION;
+        {
+            lastCol = j + MIN_PIX_REPETITION - 1;
+            break;
+        }
     }
-
-    std::vector<Uint8> cropInfo(3, 0);
+    //clear vector before using
+    std::vector<Uint16>().swap(m_emptySegments);
+    //init crop info vector
+    std::vector<Uint8> cropInfo(NOISY_ROWS, 0);
+    //analyse lower rows for noise
     for(int i = height - NOISY_ROWS; i < height; ++i)
     {
         Uint16 pixFrequency = 0;
+        Uint16 start = firstCol, stop = firstCol+1;
         for(int j = firstCol+1; j <= lastCol; ++j)
         {
-            if(image(i,j) != image(i-1,j))
+            stop = j;
+            if(m_image(i,j) != m_image(i,j-1))
+            {
                 ++pixFrequency;
+                if((i == height-1) && (stop-start > 30))
+                {
+                    m_emptySegments.push_back(start);
+                    m_emptySegments.push_back(stop-1);
+                }
+                start = j+1;
+            }
+        }
+        if((i == height-1) && (stop-start > 30))
+        {
+            m_emptySegments.push_back(start);
+            m_emptySegments.push_back(stop);
         }
         if(pixFrequency > 20)
             cropInfo[height - i - 1] = 1;
     }
-    Uint8 shift2 = cropInfo[0];
-    Uint8 shift3 = cropInfo[0] + cropInfo[1];
-    Uint8 decrease = shift3 + cropInfo[2];
-
+    Uint8 shift2 = cropInfo[2];
+    Uint8 shift3 = cropInfo[2] + cropInfo[1];
+    Uint8 decrease = shift3 + cropInfo[0];
+    //perform erasing of the noisy rows
     if(shift3)
     {
-        if(shift2)
+        for(int n = 0; n < width; ++n)
         {
-            //cpy row -2 to -3
-            for(int n = 0; n < width; ++n)
+            if(shift2)
             {
-
+                //cpy row -2 to -3
+                m_image(height-3, n) = m_image(height-2, n);
+                //m_imageBin[(height-3)*width+n] = m_imageBin[(height-2)*width+n];
             }
+            //cpy up one ore two
+            //m_imageBin[(height-1-shift3)*width+n] = m_imageBin[(height-1)*width+n];
+            m_image(height-1-shift3, n) = m_image(height-1, n);
         }
-        //cpy up one ore two
     }
     if(decrease)
     {
         //shorten image size
         height = height - decrease;
     }
+    //perform image redimensioning
+    m_image.SetNewOrigin(top, firstCol, height - top, lastCol-firstCol+1);
+    //SetNewOrigin(Int32 row, Int32 col, Int32 new_rows, Int32 new_cols);
     return cropInfo;
 }
 
-void AuxAxleDetector::DetectEdge(Array<Uint8>& image)
+/**
+ * @brief AuxAxleDetector::DetectEdge - detecting the bottom part of the vehicle
+ * @return true if processing should be continued, false if profile should be discarded
+ *
+ * Simple detection of the lower part of the vehicle, finds border between white and black
+ * pixels, uses filtration if there are small pixelizations around real border
+ *
+ */
+bool AuxAxleDetector::DetectEdge()
 {
-	Uint16 imHeight, imWidth;
+    Uint16 imHeight = m_image.Rows();
+    Uint16 imWidth = m_image.Cols();
 	Uint8 const BLOCK_SIZE = 4;
-	for(Uint16 j = 2; j < imWidth; ++j)
+
+    for(Uint16 j = 0; j < imWidth; ++j)
 	{
 		bool updated = false;
 		for(Uint16 i = imHeight - 1; i >= BLOCK_SIZE; --i)
 		{
-			if (image(i,j) == 0)
+            if (m_image(i,j) == 0)
 			{
 				if(!updated)
 				{
 					updated = true;
 					m_vehEdge[j] = imHeight - 1 - i;
-					if (m_vehEdge[j] == m_vehEdge[j-2])
-						m_vehEdge[j-1] = m_vehEdge[j];
+                    if(j >= 2)
+                    {
+                        if (m_vehEdge[j] == m_vehEdge[j-2])
+                            m_vehEdge[j-1] = m_vehEdge[j];
+                    }
 				}
-				Uint8 sum = m_vehEdge[i] + m_vehEdge[i-1]
-							+ m_vehEdge[i-2] + m_vehEdge[i-3];
+                Uint8 sum = m_image(i, j) + m_image(i-1, j)
+                            + m_image(i-2, j) + m_image(i-3, j);
 				//if two of four pixels are black
-				if(sum < (BLOCK_SIZE/2))
+                if(sum <= (BLOCK_SIZE/2))
 				{
-					if(m_vehEdge[j] + EDGE_DIFF <= (imHeight - 1 - i))
+                    if(m_vehEdge[j] + EDGE_DIFF > (imHeight - 1 - i))
 						m_vehEdge[j] = imHeight - 1 - i;
 					break;
 				}
 			}
 		}
 	}
+    m_vehLen = imWidth;
+    if(m_vehLen < MIN_ACCEPTED_LEN)
+        return false;
+    else
+        return true;
 }
 
-void AuxAxleDetector::FindPeaksManual(std::vector<float>& filteredEdge, AxleCandidates& ra, AxleCandidates& aa)
+
+/**
+ * @brief AuxAxleDetector::FindPeakCoordinates - detects maxima and minima in filtered edge
+ * @param ra - placeholder for real axle candidates coordinates
+ * @param aa - placeholder for auxiliary axle candidates coordinates
+ */
+void AuxAxleDetector::FindPeakCoordinates(AxleCandidates& ra, AxleCandidates& aa)
 {
-	float maxCand = filteredEdge[0]; //current peak candidate
+    float maxCand = m_filteredEdge[0]; //current peak candidate
 	Uint16 ind = 0; //index of the current peak candidate
 	Uint16 n = 1; //current position in signal
-	Uint16 N = filteredEdge.size();
+    Uint16 N = m_vehLen;
 	std::vector<Uint16> peaks; //peak candidates indices
 	while(n < N)
 	{
-		if(maxCand > filteredEdge[n])
+        if(maxCand > m_filteredEdge[n])
 		{
 			peaks.push_back(ind);
 			//find next maxCand
-			while((filteredEdge[n-1] > filteredEdge[n]) && (n < N))
+            while((m_filteredEdge[n-1] > m_filteredEdge[n]) && (n < N))
 			{
 				//do nothing 
 				n += 1;
 			}
-			maxCand = filteredEdge[n];
+            maxCand = m_filteredEdge[n];
 			ind = n;
 		}
 		else
 		{
-			maxCand = filteredEdge[n];
+            maxCand = m_filteredEdge[n];
 			ind = n;
 		}
 		n += 1;
@@ -201,16 +284,18 @@ void AuxAxleDetector::FindPeaksManual(std::vector<float>& filteredEdge, AxleCand
 	for(Uint16 i = 1; i < M; ++i)
 	{
 		Uint16 minLoc = peaks[i-1];
-		for(Uint16 j = peaks[i-1] + 1; j < peaks[i]; ++j)
+        for(Uint16 j = peaks[i-1] + 1; j <= peaks[i]; ++j)
 		{
-			if (filteredEdge[j] < filteredEdge[minLoc])
+            if (m_filteredEdge[j] < m_filteredEdge[minLoc])
 				minLoc = j;
 		}
-		Uint16 shift = 1; 
+        Uint16 shift = 1;
 		//if there are more minima locations choose central one
+        //for(int m = 0; m < 5; ++m)
+            //std::cout << m_filteredEdge[minLoc+m] << std::endl;
 		while(minLoc + shift < peaks[i])
 		{
-			if(filteredEdge[minLoc] == filteredEdge[minLoc + shift])
+            if(abs(m_filteredEdge[minLoc] - m_filteredEdge[minLoc + shift]) < 0.0001)
 				shift += 1;
 			else
 				break;
@@ -224,17 +309,17 @@ void AuxAxleDetector::FindPeaksManual(std::vector<float>& filteredEdge, AxleCand
 		AxleCandidate newCandidate(peaks[i-1], peaks[i], minLoc);
 
 		//if right peak is higher than left
-		if (filteredEdge[newCandidate.lEdge] < filteredEdge[newCandidate.rEdge])
+        if (m_filteredEdge[newCandidate.lEdge] < m_filteredEdge[newCandidate.rEdge])
 		{
 			//search smaller value on the right side of the "valley"
-			while(filteredEdge[newCandidate.lEdge] < filteredEdge[newCandidate.rEdge]-1)
+            while(m_filteredEdge[newCandidate.lEdge] < m_filteredEdge[newCandidate.rEdge]-1)
 				newCandidate.rEdge -= 1;
 		}
 		//if left peak is higher than right
-		else if (filteredEdge[newCandidate.lEdge] > filteredEdge[newCandidate.rEdge])
+        else if (m_filteredEdge[newCandidate.lEdge] > m_filteredEdge[newCandidate.rEdge])
 		{
 			//search smaller value on the left side of the "valley"
-			while(filteredEdge[newCandidate.lEdge + 1] > filteredEdge[newCandidate.rEdge])
+            while(m_filteredEdge[newCandidate.lEdge + 1] > m_filteredEdge[newCandidate.rEdge])
 				newCandidate.lEdge += 1;
 		}
 		//if both are equal
@@ -243,7 +328,7 @@ void AuxAxleDetector::FindPeaksManual(std::vector<float>& filteredEdge, AxleCand
 			//do nothing
 		}
 
-		if(filteredEdge[newCandidate.minLoc] > 0.5)
+        if(m_filteredEdge[newCandidate.minLoc] > 0.5)
 			//this is auxiliary axle candidate
 			aa.push_back(newCandidate);
 		else
@@ -252,51 +337,79 @@ void AuxAxleDetector::FindPeaksManual(std::vector<float>& filteredEdge, AxleCand
 	}
 }
 
-Uint32 AuxAxleDetector::DetectAxles(Array<Uint8>& image, AxleCandidates& aCand)
+/**
+ * @brief AuxAxleDetector::DetectAxles - performs elimination steps in order to identify auxiliary axes
+ * @param aCand - vector of axle candidates
+ * @param cropInfo - information about cropped rows
+ * @return - number of detected auxiliary axles
+ */
+Uint32 AuxAxleDetector::DetectAxles(AxleCandidates& aCand, std::vector<Uint8> cropInfo)
 {
 	ImproveRawAxleCandidates(aCand);
 
-	Uint16 imHeight, imWidth;
-	Uint8  cropCount;
+    Uint16 imHeight = m_image.Rows();
+    Uint16 imWidth  = m_image.Cols();
+
+    Uint32 totalAuxCount = 0;
 
 	for(AxleCandidates::iterator it = aCand.begin(); it != aCand.end(); ++it)
 	{
 		Uint8 leftH = m_vehEdge[it->lEdge]; //left edge height
 		Uint8 rightH = m_vehEdge[it->rEdge]; //right edge height
-		Uint16 cntry = Min(leftH, rightH);
-		Uint16 cntrx = it->minLoc;
+        Uint16 cntry = Min(leftH, rightH); //center of the axle candidate
+        Uint16 cntrx = it->minLoc; //center of the axle candidate
 		Uint8  minPoint = m_vehEdge[cntrx];
+        //width of the smaller detected axle candidate radius
 		Uint16 axleHWidth = Min(it->rEdge - it->minLoc, it->minLoc - it->lEdge);
+        //width of the bigger detected axle candidate radius
 		Uint16 axleHWidth2 = Max(it->rEdge - it->minLoc, it->minLoc - it->lEdge);
+        //compares detected distances from axle center(minima) to left and right edge
 		float hAxleRatio = static_cast<float>(axleHWidth2*100)/static_cast<float>(axleHWidth);
-		Uint16 axleHHeight = cntry - minPoint;
-		Uint16 start = cntrx - axleHWidth;
-		Uint16 stop  = cntrx + axleHWidth;
-		Uint16 realW1Pct = 100; //percentage of black picksels in the central row of aux axle
-		Uint16 realW2Pct = 100; //percentage of black picksels in bellow the central row of aux axle
 
-		Uint16 relPosition = static_cast<Uint16>(cntrx*100/m_vehLen);
+        Uint16 axleHHeight = cntry - minPoint; //half of the axle height
+        Uint16 start = cntrx - axleHWidth; //axle most left index
+        Uint16 stop  = cntrx + axleHWidth; //axle most right index
+        Uint16 blkCont1 = 100, blkCont2 = 100; //black contribution in central and row bellow
+        //relative position of an axle in vehicle profile
+        Uint32 relPosition = static_cast<float>((cntrx+1)*100)/m_vehLen;
 
+        //check if auxiliary axle has min point at the ground due to cutting
+        //of the lowes image row (after noise filtering)
+        bool emptyUnderZero = false;
+        if((minPoint == 0) && (cropInfo.size() > 0) && (cropInfo[0] != 0))
+        {
+            for(Uint16 ind = 1; ind < m_emptySegments.size(); ind += 2)
+            {
+                if((m_emptySegments[ind] > it->rEdge) && (m_emptySegments[ind-1] < it->lEdge))
+                {
+                    emptyUnderZero = true;
+                    break;
+                }
+            }
+        }
 
-		std::set<Uint16> leftDistances, rightDistances;
-		if((m_vehEdge[cntrx] > 0) && (abs(leftH-rightH) <= MAX_EDGE_HEIGHT_DIFF) &&
+        std::set<Uint16> leftDistances, rightDistances;
+        //perform some simple checks (FIXED TRESHOLDS)
+        if(((m_vehEdge[cntrx] > 0) || emptyUnderZero ) && (abs(leftH-rightH) <= MAX_EDGE_HEIGHT_DIFF) &&
 			(axleHWidth > MIN_AXLE_HWIDTH) && (axleHHeight >= MIN_AXLE_HHEIGHT)
 			&& (hAxleRatio < 200))
 		{
-            if((cntry < MAX_CNTRY) && ((relPosition > 20) || (cntrx > MIN_POS_IND)))
+            //additional simple checks (FIXED TRESHOLDS)
+            if((cntry < MAX_CNTRY) && ((relPosition > MIN_REL_POS) || (cntrx > MIN_POS_IND)))
 			{
 				Uint32 areaOver = 0;
 				bool error = false;
-				Uint16 blkCont1 = 100, blkCont2 = 100; //black contribution in central and row bellow
+                //calculate area of axle candidate starting from most left point
+                //to most right point, and from min point to center of an axle
 				for(Uint16 i = imHeight-1-minPoint; i >= imHeight-1-cntry; --i)
 				{
 					bool empty = true;
 					
 					Uint16 areaPart1 = cntrx, areaPart2 = cntrx;
 					//find most left position
-					for(Uint16 j = start-1; j < stop+1; ++j)
+                    for(Uint16 j = start-1; j <= stop+1; ++j)
 					{
-						if(image(i,j)==0)
+                        if(m_image(i,j)==0)
 						{
 							empty = false;
 							areaPart1 = j;
@@ -310,71 +423,106 @@ Uint32 AuxAxleDetector::DetectAxles(Array<Uint8>& image, AxleCandidates& aCand)
 					//find most right position
 					for(Uint16 j = stop+1; j >= start-1; --j)
 					{
-						if(image(i,j)==0)
+                        if(m_image(i,j)==0)
 						{
 							empty = false;
 							areaPart2 = j;
 							break;
 						}
 					}
+                    //do not check lower three rows to avoid errors from noise
+                    if((i < imHeight-3-minPoint) && ((areaPart1 > cntrx) || (areaPart2 < cntrx)))
+                    {
+                        //left side of the axle more right than minima
+                        //right side of the axle more left than minima
+                        error = true;
+                        break;
+                    }
+
 					rightDistances.insert(areaPart2);
 					if(empty)
 						error = true;
+                    //check if we have detected empty row in axle candidate (not allowed)
 					if(error)
 					{
 						Uint16 maxErrPixels = 2*axleHWidth;
 						Uint16 blackPix = imWidth;
 						for(Uint16 rowInd = 0; rowInd < imWidth; ++rowInd)
-							blackPix -= image(i,rowInd);
+                            blackPix -= (m_image(i,rowInd) != 0);
 						if(blackPix < maxErrPixels)
 							break;
+                        else
+                            error = false;
 
 					}
 					
 					areaOver += areaPart2 - areaPart1 + 1;
+                    //calculate percentage of black pixels in row one bellow axle center
 					if(i == imHeight-cntry-1)
 					{
 						Uint16 sum = 0;
 						for(Uint16 posInd = areaPart1; posInd <= areaPart2; ++posInd)
-							sum += image(i, posInd);
-						blkCont1 = sum;
+                            sum += (m_image(i, posInd) == 0);
+                        blkCont1 = sum*50/axleHWidth; // *100/(axleHWidth*2)
 					}
+                    //calculate percentage of black pixels in central row
 					if(i == imHeight-cntry)
 					{
 						Uint16 sum = 0;
 						for(Uint16 posInd = areaPart1; posInd <= areaPart2; ++posInd)
-							sum += image(i, posInd);
-						blkCont2 = sum;
+                            sum += (m_image(i, posInd) == 0);
+                        blkCont2 = sum*50/axleHWidth; // *100/(axleHWidth*2)
 					}
 
 				}
-				if(error)//if empty row in axle
+                if(error)//if empty row in axle or strange shape of axle
 					continue;
 
-				float ellipseHArea = 0.5*(axleHWidth-0.5)*axleHHeight*LOCAL_PI;
-				float ellipseRatio = static_cast<float>(areaOver)/ellipseHArea;
+                //projected ellipse are (calculated from detected coordinates)
+                float ellipseHArea = 0.5*(static_cast<float>(axleHWidth)-0.5)*axleHHeight*LOCAL_PI;
+                //compare real area and projected area
+                float ellipseRatio = static_cast<float>(areaOver)/ellipseHArea*100;
+                //determine width variability of left and right side
 				Uint16 rightVar = rightDistances.size();
 				Uint16 leftVar  = leftDistances.size();
 				Uint16 sideVar  = Min(leftVar, rightVar);
-				if(minPoint + cropCount > 8)
+
+                if(sideVar == 0) //if side is straight line
+                    continue;
+                Uint8 cropCountSz = 0;
+                for(Uint16 sz = 0; sz < cropInfo.size(); ++sz)
+                    cropCountSz += cropInfo[sz];
+
+                //for higher axle candidate use more rigorous constraints
+                if(minPoint + cropCountSz > 8)
 				{
 					if(100.0f*static_cast<float>(sideVar)/
 						static_cast<float>(axleHHeight) < 50)
 						continue;
+                    if(ellipseRatio < 90 || ellipseRatio > 115)
+                        continue;
 				}
+                //final checking
 				if((ellipseRatio >= 85) && (ellipseRatio <= 130) && 
 					(blkCont1 > 85) && (blkCont2 > 85))
 				{
-					std::cout << "Found lifted axle" << std::endl;
+                    //this is (with high probability) auxiliary axle
+                    ++totalAuxCount;
 				}
 			}
 		}
 
 	}
 
-	return 0;
+    return totalAuxCount;
 }
 
+
+/**
+ * @brief AuxAxleDetector::ImproveRawAxleCandidates - perform corrections on candidate
+ *                                                    coordinates (using raw edge)
+ * @param aCand - list of axle candidates
+ */
 void AuxAxleDetector::ImproveRawAxleCandidates(AxleCandidates& aCand)
 {
 	for(AxleCandidates::iterator it = aCand.begin(); it != aCand.end(); ++it)
@@ -483,26 +631,37 @@ void AuxAxleDetector::ImproveRawAxleCandidates(AxleCandidates& aCand)
 	}
 }
 
+/**
+ * @brief AuxAxleDetector::AuxAxleDetector - default constructor
+ */
 AuxAxleDetector::AuxAxleDetector()
     :m_vehEdge(NULL)
     ,m_filteredEdge(NULL)
-    ,m_imageBin(NULL)
     ,m_vehLen(0)
 {
-    m_vehEdge = new Uint8[8192];
-    m_filteredEdge = new float[8192];
+    m_vehEdge = new Uint8[ARR_SIZE];
+    m_filteredEdge = new float[ARR_SIZE];
 }
 
-
+/**
+ * @brief AuxAxleDetector::~AuxAxleDetector - storage cleanup
+ */
 AuxAxleDetector::~AuxAxleDetector()
 {
     if(m_vehEdge != NULL)
         delete[] m_vehEdge;
     if(m_filteredEdge != NULL)
         delete[] m_filteredEdge;
+    //std::cout << "Releasing resources" << std::endl;
+    //if(m_imageBin != NULL)
+      //  delete[] m_imageBin;
 }
 
-
+/**
+ * @brief AuxAxleDetector::ImproveAxleCandidates - perform corrections on candidate
+ *                                                 coordinates (using filtered edge)
+ * @param aCand - list of axle candidates, Hanning filter offset
+ */
 void AuxAxleDetector::ImproveAxleCandidates(Uint16 offset, AxleCandidates& aCand)
 {
 	for(AxleCandidates::iterator it = aCand.begin(); it != aCand.end(); ++it)
@@ -519,12 +678,12 @@ void AuxAxleDetector::ImproveAxleCandidates(Uint16 offset, AxleCandidates& aCand
 		Uint16 lastLeft = left, lastRight = right;
 		for(Uint16 j = left; j < middle; ++j)
 		{
-			if(m_vehEdge[j] > m_vehEdge[left])
+            if(m_vehEdge[j] >= m_vehEdge[left])
 				lastLeft = j;
 		}
 		for(Uint16 j = right; j > middle; --j)
 		{
-			if(m_vehEdge[j] > m_vehEdge[right])
+            if(m_vehEdge[j] >= m_vehEdge[right])
 				lastRight = j;
 		}
 
@@ -534,22 +693,37 @@ void AuxAxleDetector::ImproveAxleCandidates(Uint16 offset, AxleCandidates& aCand
 	}
 }
 
+/**
+ * @brief AuxAxleDetector::FindAxleCandidates - finds auxiliary axle candidates using filtered edge
+ * @param auxCandidates - placeholder for candidates
+ */
 void AuxAxleDetector::FindAxleCandidates(AxleCandidates& auxCandidates)
 {
     if (m_vehEdge==NULL)
 		return;
 
-	std::vector<float> filteredEdge;
 	//perform low pass filtering of the vehicle bottom edge
 	HanFilter hf;
+    std::vector<Uint8> tmpEdge;
+    for(Uint16 i = 0; i < m_vehLen; ++i)
+    {
+        tmpEdge.push_back(m_vehEdge[i]);
+    }
     hf.SetInputData(&m_vehEdge[0], m_vehLen);
-	Uint16 offset = 0;
+    //std::vector<float> filteredEdge(ARR_SIZE, 0.0f);
+    hf.SetOutputStorage(&m_filteredEdge[0], ARR_SIZE);
+    if(hf.IsFilterable())
+        hf.Filter();
+    else
+        return;
+
+    Uint16 offset = hf.GetFilterOffset();
 	if(offset == 0) // input is to small for processing
 		return;
 	
 	AxleCandidates raCand; //real axle candidates
 	AxleCandidates aaCand; //auxiliary axle candidates
-	FindPeaksManual(filteredEdge, raCand, aaCand);
+    FindPeakCoordinates(raCand, aaCand);
 
 	ImproveAxleCandidates(offset, raCand);
 	ImproveAxleCandidates(offset, aaCand);
@@ -577,7 +751,7 @@ void AuxAxleDetector::FindAxleCandidates(AxleCandidates& auxCandidates)
 	if(AxleHalfWidth1 == 0 || AxleHalfWidth2 == 0)
 		return;
 
-	for(AxleCandidates::const_iterator it = aaCand.begin(); it != raCand.end(); ++it)
+    for(AxleCandidates::const_iterator it = aaCand.begin(); it != aaCand.end(); ++it)
 	{
 		Uint16 indLeft = it->lEdge;
 		Uint16 indRight = it->rEdge;
@@ -585,11 +759,11 @@ void AuxAxleDetector::FindAxleCandidates(AxleCandidates& auxCandidates)
 
 		if ((indRight - indLeft) < MIN_TYRE_WIDTH)
 			continue; //candidate width too narrow
-		if (filteredEdge[indMin] > MAX_LIFTED_HEIGHT)
+        if (m_filteredEdge[indMin] > MAX_LIFTED_HEIGHT)
 			continue; //candidate position too high
 		
-		float leftH  = filteredEdge[indLeft] - filteredEdge[indMin];
-		float rightH = filteredEdge[indRight] - filteredEdge[indMin];
+        float leftH  = m_filteredEdge[indLeft] - m_filteredEdge[indMin];
+        float rightH = m_filteredEdge[indRight] - m_filteredEdge[indMin];
 		float smallerEdge = Min(leftH, rightH);
 
 		if(smallerEdge < MIN_TYRE_RADIUS)
@@ -607,7 +781,7 @@ void AuxAxleDetector::FindAxleCandidates(AxleCandidates& auxCandidates)
 
 		float axleRatio = static_cast<float>(AxleHalfWidth1)/static_cast<float>(AxleHalfWidth2);
 
-		float widthPercentage = (filteredEdge[indMin] > 10.0f)? WIDTH_PERCENTAGE2 : WIDTH_PERCENTAGE;
+        float widthPercentage = (m_filteredEdge[indMin] > 10.0f)? WIDTH_PERCENTAGE2 : WIDTH_PERCENTAGE;
 		if(axleRatio >= MAIN_AXLE_RATIO)
 		{
 			//there is a big difference between two greatest vehicle axles

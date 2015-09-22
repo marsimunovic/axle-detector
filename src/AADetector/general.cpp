@@ -17,6 +17,8 @@
 #include "libnsgif.h"
 #endif
 
+#define MEAS_TIME_LINUX 1
+
 void Error(const string &s)
 {
   assert(s.length() != 0);

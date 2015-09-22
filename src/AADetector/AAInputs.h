@@ -66,5 +66,4 @@ const Uint16  REAL_WIDTH_ROW1_PCT = 85;
 const Uint16  REAL_WIDTH_ROW2_PCT = 85;
 const Uint16  LOWER_PART = 70;
 
-
 #endif//AAINPUTS_H
