@@ -7,6 +7,9 @@
 #include <algorithm>
 #include <set>
 
+#include <sys/stat.h>
+#include <unistd.h>
+
 #define MEAS_TIME_LINUX 1
 //#define SAVING_OFF 1
 //#define DEBUG_SEL 1
@@ -15,6 +18,12 @@
 
 char const fSep = '/';
 std::string const fExt = ".gif";
+
+inline bool exists_test3 (const std::string& name) {
+  struct stat buffer;
+  return (stat (name.c_str(), &buffer) == 0);
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -27,8 +36,11 @@ int main(int argc, char *argv[])
 #endif
 
 
-    Uint32 baseNumbers[10] = {655000, 665000, 710000, 715000, 730000,
+    Uint32 baseNumbers2[10] = {655000, 665000, 710000, 715000, 730000,
                             740000, 750000, 755000, 805000, 810000};
+    Uint32 baseNumbers[16] = {5000, 10000, 15000, 280000, 660000, 670000,
+                            675000, 695000, 720000, 725000, 750000,
+                            755000, 760000, 765000, 860000, 865000};
     //std::cout << (sizeof(baseNumbers)/sizeof(baseNumbers[0])) << std::endl;
 #ifdef  DEBUG_SEL
     Uint32 debugNum = 719026;
@@ -52,6 +64,8 @@ int main(int argc, char *argv[])
             std::stringstream ss;
             Uint32 subdir = (cnt/250)*250;
             ss << '.' << fSep << baseNum << "_images" << fSep << subdir << fSep << (baseNum+cnt) << fExt;
+            if(!exists_test3(ss.str()))
+                continue;
             AuxAxleDetector AAD;
             AAD.LoadProfileDetails(ss.str());
             unsigned int numAxles = AAD.CountAuxAxles();

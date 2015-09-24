@@ -12,8 +12,8 @@ Uint16 const  ARR_SIZE = 8192;
 Uint8 const  NOISY_ROWS = 3;
 Uint8 const  MIN_PIX_REPETITION = 40;
 Uint8 const  EDGE_DIFF = 5; //filtering treshold for edge detection
+Uint8 const  LOC_BLACK_PIX = 0;
 float const  LOCAL_PI = 3.14159265f;
-
 /**
  * @brief AuxAxleDetector::LoadProfileDetails - load image to appropriate data structure
  * @param imageName - file path to image
@@ -73,6 +73,33 @@ Uint32 AuxAxleDetector::CountAuxAxles()
     return axleCount;
 }
 
+Uint32 AuxAxleDetector::CountAuxAxles(Array<Uint8> &image)
+{
+    if(m_cleanImage)
+        m_image.Release();
+    m_image.Copy(image);
+    m_cleanImage = true;
+    std::vector<Uint8> cropInfo = CropImage();
+    Uint32 axleCount = 0;
+    if(DetectEdge())
+    {
+        AxleCandidates auxCandidates;
+        FindAxleCandidates(auxCandidates);
+        axleCount = DetectAxles(auxCandidates, cropInfo);
+    }
+    return axleCount;
+}
+
+bool AuxAxleDetector::IsBlackPix(Uint16 row, Uint16 col)
+{
+    return (m_image(row, col) == LOC_BLACK_PIX);
+}
+
+bool AuxAxleDetector::IsWhitePix(Uint16 row, Uint16 col)
+{
+    return !IsBlackPix(row,col);
+}
+
 /**
  * @brief AuxAxleDetector::CropImage - crops image to appropriate dimensions
  * @return - information about cropped rows
@@ -103,7 +130,7 @@ std::vector<Uint8> AuxAxleDetector::CropImage()
     {
         Uint16 sum = 0;
         for(int i = top; i < height; ++i)
-            sum += (m_image(i,j) == 0);
+            sum += IsBlackPix(i, j);
         if (sum > 5)
             ++countFront;
         else
@@ -121,7 +148,7 @@ std::vector<Uint8> AuxAxleDetector::CropImage()
     {
         Uint16 sum = 0;
         for(int i = top; i < height; ++i)
-            sum += (!m_image(i,j));
+            sum += IsBlackPix(i, j);
         if (sum > 5)
             ++countBack;
         else
@@ -212,7 +239,7 @@ bool AuxAxleDetector::DetectEdge()
 		bool updated = false;
 		for(Uint16 i = imHeight - 1; i >= BLOCK_SIZE; --i)
 		{
-            if (m_image(i,j) == 0)
+            if (IsBlackPix(i, j))
 			{
 				if(!updated)
 				{
@@ -397,6 +424,23 @@ Uint32 AuxAxleDetector::DetectAxles(AxleCandidates& aCand, std::vector<Uint8> cr
             //additional simple checks (FIXED TRESHOLDS)
             if((cntry < MAX_CNTRY) && ((relPosition > MIN_REL_POS) || (cntrx > MIN_POS_IND)))
 			{
+
+                Uint16 yheight = axleHHeight;
+                Uint16 xwidth   = 0.4*axleHWidth;
+                Uint16 totalUp = yheight*(2*xwidth+1);
+                if(imHeight-1-cntry-yheight >= 0)
+                {
+                    for(Uint16 ix = cntrx-xwidth; ix <= cntrx+xwidth; ++ix)
+                    {
+                        for(Uint16 iy = imHeight-1-cntry-yheight; iy < imHeight-1-cntry; ++iy)
+                        {
+                            totalUp = totalUp - IsWhitePix(iy, ix); //m_image(iy, ix) != 0);
+                        }
+                    }
+                    if (totalUp < yheight*(2*xwidth+1)*0.85) //if less than 85% pixels above black is not axle
+                        continue;
+                }
+
 				Uint32 areaOver = 0;
 				bool error = false;
                 //calculate area of axle candidate starting from most left point
@@ -409,7 +453,7 @@ Uint32 AuxAxleDetector::DetectAxles(AxleCandidates& aCand, std::vector<Uint8> cr
 					//find most left position
                     for(Uint16 j = start-1; j <= stop+1; ++j)
 					{
-                        if(m_image(i,j)==0)
+                        if(IsBlackPix(i,j))//(m_image(i,j)==0)
 						{
 							empty = false;
 							areaPart1 = j;
@@ -423,7 +467,7 @@ Uint32 AuxAxleDetector::DetectAxles(AxleCandidates& aCand, std::vector<Uint8> cr
 					//find most right position
 					for(Uint16 j = stop+1; j >= start-1; --j)
 					{
-                        if(m_image(i,j)==0)
+                        if(IsBlackPix(i,j))//(m_image(i,j)==0)
 						{
 							empty = false;
 							areaPart2 = j;
@@ -448,7 +492,7 @@ Uint32 AuxAxleDetector::DetectAxles(AxleCandidates& aCand, std::vector<Uint8> cr
 						Uint16 maxErrPixels = 2*axleHWidth;
 						Uint16 blackPix = imWidth;
 						for(Uint16 rowInd = 0; rowInd < imWidth; ++rowInd)
-                            blackPix -= (m_image(i,rowInd) != 0);
+                            blackPix -= IsWhitePix(i, rowInd);//(m_image(i,rowInd) != 0);
 						if(blackPix < maxErrPixels)
 							break;
                         else
@@ -462,7 +506,7 @@ Uint32 AuxAxleDetector::DetectAxles(AxleCandidates& aCand, std::vector<Uint8> cr
 					{
 						Uint16 sum = 0;
 						for(Uint16 posInd = areaPart1; posInd <= areaPart2; ++posInd)
-                            sum += (m_image(i, posInd) == 0);
+                            sum += IsBlackPix(i, posInd);// m_image(i, posInd) == 0);
                         blkCont1 = sum*50/axleHWidth; // *100/(axleHWidth*2)
 					}
                     //calculate percentage of black pixels in central row
@@ -470,7 +514,7 @@ Uint32 AuxAxleDetector::DetectAxles(AxleCandidates& aCand, std::vector<Uint8> cr
 					{
 						Uint16 sum = 0;
 						for(Uint16 posInd = areaPart1; posInd <= areaPart2; ++posInd)
-                            sum += (m_image(i, posInd) == 0);
+                            sum += IsBlackPix(i, posInd);//(m_image(i, posInd) == 0);
                         blkCont2 = sum*50/axleHWidth; // *100/(axleHWidth*2)
 					}
 
@@ -497,21 +541,20 @@ Uint32 AuxAxleDetector::DetectAxles(AxleCandidates& aCand, std::vector<Uint8> cr
                 if(minPoint + cropCountSz > 8)
 				{
 					if(100.0f*static_cast<float>(sideVar)/
-						static_cast<float>(axleHHeight) < 50)
+                        static_cast<float>(axleHHeight) < AXLE_SIDE_VARIABILITY_8)
 						continue;
-                    if(ellipseRatio < 90 || ellipseRatio > 115)
+                    if(ellipseRatio < MIN_AREA_RATIO_8 || ellipseRatio > MAX_AREA_RATIO_8)
                         continue;
 				}
                 //final checking
-				if((ellipseRatio >= 85) && (ellipseRatio <= 130) && 
-					(blkCont1 > 85) && (blkCont2 > 85))
+                if((ellipseRatio >= MIN_AREA_RATIO) && (ellipseRatio <= MAX_AREA_RATIO) &&
+                    (blkCont1 > REAL_WIDTH_ROW1_PCT) && (blkCont2 > REAL_WIDTH_ROW2_PCT))
 				{
                     //this is (with high probability) auxiliary axle
                     ++totalAuxCount;
 				}
 			}
 		}
-
 	}
 
     return totalAuxCount;
@@ -635,9 +678,10 @@ void AuxAxleDetector::ImproveRawAxleCandidates(AxleCandidates& aCand)
  * @brief AuxAxleDetector::AuxAxleDetector - default constructor
  */
 AuxAxleDetector::AuxAxleDetector()
-    :m_vehEdge(NULL)
-    ,m_filteredEdge(NULL)
+    :m_cleanImage(false)
     ,m_vehLen(0)
+    ,m_vehEdge(NULL)
+    ,m_filteredEdge(NULL)
 {
     m_vehEdge = new Uint8[ARR_SIZE];
     m_filteredEdge = new float[ARR_SIZE];

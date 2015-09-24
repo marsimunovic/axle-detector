@@ -22,7 +22,8 @@ HanFilter::HanFilter()
 	:m_lenIn(0)
 	,m_lenOut(0)
 	,m_windowSz(0)
-	,m_valid(false)
+    ,m_validIn(false)
+    ,m_validOut(false)
 	,m_inPtr(NULL)
 	,m_outPtr(NULL)
     ,m_hanWin(NULL)
@@ -34,9 +35,9 @@ HanFilter::HanFilter()
  * @param inputLen - length of an input signal
  * @return -is input initialization successfull
  */
-bool HanFilter::SetInputData(Uint8* input, Uint16 inputLen)
+bool HanFilter::SetInputData(const Uint8 *input, Uint16 inputLen)
 {
-	m_valid = true;
+    m_validIn = true;
 	m_lenIn = inputLen;
     m_inPtr = input;
 	if(inputLen < 400)
@@ -44,7 +45,7 @@ bool HanFilter::SetInputData(Uint8* input, Uint16 inputLen)
 		//reset
         m_inPtr = NULL;
 		m_lenIn = 0;
-		m_valid = false;
+        m_validIn = false;
 	}
 	else if(inputLen < 500)
 	{
@@ -61,7 +62,7 @@ bool HanFilter::SetInputData(Uint8* input, Uint16 inputLen)
 		m_windowSz = 40;
 		m_hanWin = HAN40;
 	}
-	return m_valid;
+    return m_validIn;
 }
 
 /**
@@ -72,16 +73,17 @@ bool HanFilter::SetInputData(Uint8* input, Uint16 inputLen)
  */
 bool HanFilter::SetOutputStorage(float *output, Uint16 availableLen)
 {
-    if((m_valid) && ((m_lenIn + m_windowSz - 1) <= availableLen))
+    if((m_validIn) && ((m_lenIn + m_windowSz - 1) <= availableLen))
 	{
 		m_outPtr = output;
 		m_lenOut = availableLen;
+        m_validOut = true;
 	}
 	else
 	{
-		m_valid = false;
+        m_validOut = false;
 	}
-	return m_valid;
+    return m_validOut;
 }
 
 /**
@@ -90,7 +92,7 @@ bool HanFilter::SetOutputStorage(float *output, Uint16 availableLen)
  */
 bool HanFilter::IsFilterable()
 {
-	return m_valid;
+    return (m_validIn && m_validOut);
 }
 
 /**
@@ -130,7 +132,7 @@ void HanFilter::Filter()
 
 			++outInd;
 		}
-		while(outInd < (m_lenIn + m_windowSz - 1))
+/*		while(outInd < (m_lenIn + m_windowSz - 1))
 		{
 			Uint16 sigInd = outInd;
 			float sum = 0;
@@ -141,5 +143,6 @@ void HanFilter::Filter()
 			m_outPtr[outInd] = sum;
 			++outInd;
 		}
+*/
 	}
 }

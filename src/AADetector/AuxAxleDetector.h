@@ -22,8 +22,15 @@ class AuxAxleDetector
 public:
 	AuxAxleDetector();
     ~AuxAxleDetector();
+    /*------------------------------------------------------*/
+    // QT specific methods - DO NOT USE IN IMPLEMENTATION!  //
+    /*------------------------------------------------------*/
     void LoadProfileDetails(std::string const &imageName);
     Uint32 CountAuxAxles();
+    /*------------------------------------------------------*/
+    //              End of QT specific methods              //
+    /*------------------------------------------------------*/
+    Uint32 CountAuxAxles(Array<Uint8>& image);
 //proprietary members
 private:
 	//Axle Canidate Coordinates
@@ -39,22 +46,24 @@ private:
 	typedef std::vector<AxleCandidate> AxleCandidates;
 //inner methods
 private:
+    inline bool IsBlackPix(Uint16 row, Uint16 col);
+    inline bool IsWhitePix(Uint16 row, Uint16 col);
     std::vector<Uint8> CropImage();
     bool DetectEdge();
+    void FindAxleCandidates(AxleCandidates& auxCandidates);
     void FindPeakCoordinates(AxleCandidates& ra, AxleCandidates& aa);
-	void ImproveAxleCandidates(Uint16 offset, AxleCandidates& aCand);
-	void ImproveRawAxleCandidates(AxleCandidates& aCand);
-	void FindAxleCandidates(AxleCandidates& auxCandidates);
+    void ImproveAxleCandidates(Uint16 offset, AxleCandidates& aCand);
+    void ImproveRawAxleCandidates(AxleCandidates& aCand);
     Uint32 DetectAxles(AxleCandidates& aCand, std::vector<Uint8> cropInfo);
 
 //members
 private:
+    bool   m_cleanImage;
+    Uint32 m_vehLen;
 	Uint8* m_vehEdge;
 	float* m_filteredEdge;
-    Array<Uint8> m_image;
-	Uint32 m_vehLen;
     std::vector<Uint16> m_emptySegments;
-
+    Array<Uint8> m_image;
 };
 
 #endif
